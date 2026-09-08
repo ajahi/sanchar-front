@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+  <!-- Sanchar Mailbox Logo corresponding exactly to icons8-mailbox-600 -->
+  <g fill="none" stroke="currentColor" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Two legs at bottom -->
+    <line x1="345" y1="430" x2="345" y2="550" stroke="currentColor" stroke-width="24" />
+    <line x1="395" y1="430" x2="395" y2="550" stroke="currentColor" stroke-width="24" />
+    
+    <!-- Mailbox Main Body Outer Contour -->
+    <!-- Front arch face: left wall, curved dome top, vertical division, bottom base -->
+    <path 
+      d="M 120 430 L 120 230 C 120 145, 195 125, 290 125 L 490 155 C 540 165, 560 205, 560 260 L 560 430 L 120 430 Z" 
+      fill="currentColor" 
+      fill-opacity="0.05"
+      stroke="currentColor" 
+      stroke-width="26" 
+    />
+    
+    <!-- Front Face Divider / Dome Arch -->
+    <path 
+      d="M 120 430 L 120 230 C 120 145, 195 125, 290 125 C 290 125, 305 130, 310 145 L 310 430 L 120 430 Z" 
+      fill="none" 
+      stroke="currentColor" 
+      stroke-width="26" 
+    />
+    
+    <!-- Mail Slot on Front Face -->
+    <rect x="155" y="240" width="95" height="24" rx="12" fill="currentColor" stroke="none" />
+    
+    <!-- Mailbox Flag Assembly on the side -->
+    <!-- Pivot circular bolt -->
+    <circle cx="385" cy="230" r="22" fill="currentColor" stroke="none" />
+    <!-- Flag arm extending to the right -->
+    <rect x="385" y="218" width="130" height="24" fill="currentColor" stroke="none" />
+    <!-- Flag tip pointing downwards -->
+    <rect x="465" y="218" width="50" height="70" fill="currentColor" stroke="none" />
+  </g>
+</svg>

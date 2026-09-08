@@ -1,0 +1,170 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --paper-bg: #FAF3E0;
+    --paper-dark: #F5EBE0;
+    --vermilion: #B8251B;
+    --vermilion-dark: #8F1810;
+    --ochre: #E09A25;
+    --ochre-light: #FCEFD2;
+    --indigo: #1A2B4C;
+    --match-black: #1A1A1A;
+  }
+
+  body {
+    background-color: #FAF3E0;
+    color: #1A1A1A;
+    font-family: 'Space Mono', 'Courier Prime', monospace;
+    background-image: 
+      radial-gradient(#1a2b4c10 1px, transparent 1px),
+      radial-gradient(#b8251b08 1px, #FAF3E0 1px);
+    background-size: 24px 24px, 12px 12px;
+    background-position: 0 0, 6px 6px;
+    margin: 0;
+    min-height: 100vh;
+  }
+}
+
+/* High Density Design Theme Utility Classes */
+.matchbox-border {
+  border: 3px solid #1A1A1A;
+  box-shadow: 5px 5px 0px #1A1A1A;
+}
+
+.matchbox-border-sm {
+  border: 2px solid #1A1A1A;
+  box-shadow: 3px 3px 0px #1A1A1A;
+}
+
+.vermilion-bg {
+  background-color: #B8251B;
+}
+
+.mustard-bg {
+  background-color: #E09A25;
+}
+
+.indigo-text {
+  color: #1A2B4C;
+}
+
+.aged-paper {
+  background-color: #FAF3E0;
+  background-image: radial-gradient(#d1c7b7 0.5px, transparent 0.5px);
+  background-size: 4px 4px;
+}
+
+.serif-heading {
+  font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
+  text-transform: uppercase;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.pill {
+  border: 2px solid #1A1A1A;
+  padding: 2px 8px;
+  font-weight: bold;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+
+.font-display-blocky {
+  font-family: 'Rozha One', 'Cinzel', Georgia, serif;
+  letter-spacing: 0.08em;
+}
+
+.font-mono-retro {
+  font-family: 'Space Mono', 'Courier Prime', monospace;
+}
+
+/* Authentic Matchbox Offset Hard Shadow */
+.matchbox-card {
+  background-color: #FFFDF9;
+  border: 3px solid #1A1A1A;
+  box-shadow: 5px 5px 0px #1A1A1A;
+}
+
+.matchbox-card-vermilion {
+  background-color: #FFFDF9;
+  border: 3px solid #B8251B;
+  box-shadow: 5px 5px 0px #1A1A1A;
+}
+
+.matchbox-button-primary {
+  background-color: #B8251B;
+  color: #FFFDF9;
+  border: 2px solid #1A1A1A;
+  box-shadow: 3px 3px 0px #1A1A1A;
+  transition: all 0.1s ease-in-out;
+}
+
+.matchbox-button-primary:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #1A1A1A;
+}
+
+.matchbox-button-primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #1A1A1A;
+}
+
+.matchbox-button-ochre {
+  background-color: #E09A25;
+  color: #1A1A1A;
+  border: 2px solid #1A1A1A;
+  box-shadow: 3px 3px 0px #1A1A1A;
+  transition: all 0.1s ease-in-out;
+}
+
+.matchbox-button-ochre:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #1A1A1A;
+}
+
+.matchbox-button-ochre:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #1A1A1A;
+}
+
+.matchbox-button-secondary {
+  background-color: #FAF3E0;
+  color: #1A1A1A;
+  border: 2px solid #1A1A1A;
+  box-shadow: 3px 3px 0px #1A1A1A;
+  transition: all 0.1s ease-in-out;
+}
+
+.matchbox-button-secondary:hover {
+  background-color: #F5EBE0;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #1A1A1A;
+}
+
+/* Strikepad friction strip pattern */
+.strikepad-edge {
+  background-color: #4A2E18;
+  background-image: radial-gradient(#1A1A1A 20%, transparent 25%),
+                    radial-gradient(#6B4423 20%, transparent 25%);
+  background-size: 6px 6px;
+  background-position: 0 0, 3px 3px;
+}
+
+/* Lithograph / Woodcut Stamp Border */
+.litho-stamp-border {
+  border: 4px double #1A1A1A;
+  outline: 2px solid #B8251B;
+  outline-offset: -6px;
+}
+
+/* Vintage Halftone dot overlay */
+.halftone-tint {
+  background-image: radial-gradient(rgba(26, 43, 76, 0.08) 15%, transparent 16%);
+  background-size: 4px 4px;
+}
