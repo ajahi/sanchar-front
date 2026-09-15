@@ -8,7 +8,6 @@ services:
     networks:
       - nepsocial
 
-# Shared with nepsocial-backend (which creates it); `api` resolves to the backend container.
 networks:
   nepsocial:
     external: true
