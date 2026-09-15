@@ -5,3 +5,10 @@ services:
       - "3000:3000"
     env_file: .env
     restart: unless-stopped
+    networks:
+      - nepsocial
+
+# Shared with nepsocial-backend (which creates it); `api` resolves to the backend container.
+networks:
+  nepsocial:
+    external: true

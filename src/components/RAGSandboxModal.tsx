@@ -1,3 +1,4 @@
+import { askAi } from '../api';
 import React, { useState } from 'react';
 import { Sparkles, Send, Bot, AlertTriangle, ShieldCheck, CheckCircle, RefreshCw, X } from 'lucide-react';
 import { ChannelType, RAGSimulationResult } from '../types';
@@ -33,16 +34,7 @@ export const RAGSandboxModal: React.FC<RAGSandboxModalProps> = ({
     if (!testQuery.trim()) return;
     setIsLoading(true);
     try {
-      const res = await fetch('/api/rag/process-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: testQuery,
-          channel,
-          confidenceThreshold
-        })
-      });
-      const data = await res.json();
+      const data = await askAi({ query: testQuery, channel: channel, confidenceThreshold });
       setResult({
         query: testQuery,
         answer: data.answer,

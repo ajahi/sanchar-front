@@ -1,12 +1,9 @@
 import type { NextConfig } from 'next';
 
+// /api/v1/* is proxied to the FastAPI backend in middleware.ts (runtime env,
+// so one image runs anywhere). Doing it here via rewrites() would bake the URL at build.
 const nextConfig: NextConfig = {
   output: 'standalone',
-  // The original Vite/esbuild build did not typecheck or lint at build time
-  // (types were checked separately via `npm run lint` = tsc --noEmit).
-  // Mirror that so pre-existing type gaps don't block the production build.
-  typescript: { ignoreBuildErrors: true },
-  eslint: { ignoreDuringBuilds: true },
 };
 
 export default nextConfig;

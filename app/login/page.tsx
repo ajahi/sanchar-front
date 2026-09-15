@@ -1,121 +1,32 @@
-import React, { useState } from 'react';
+'use client';
+
+import { useState } from 'react';
 import { 
   Check, 
   ArrowRight, 
   Instagram, 
-  Sparkles, 
-  Flame, 
-  ShieldCheck, 
-  Clock, 
-  Layers 
+  ShieldCheck
 } from 'lucide-react';
-import { AuthUser } from '../types';
-import { SancharLogo } from './SancharLogo';
+import { SancharLogo } from '../../src/components/SancharLogo';
+import { INSTAGRAM_LOGIN_URL, login } from '../../src/api';
 
-interface AuthPageProps {
-  onLoginSuccess: (user: AuthUser) => void;
-  currentUser: AuthUser | null;
-  onContinueAsGuest?: () => void;
-}
-
-export const AuthPage: React.FC<AuthPageProps> = ({
-  onLoginSuccess,
-  currentUser,
-  onContinueAsGuest,
-}) => {
-  const [authMode, setAuthMode] = useState<'signup' | 'login'>('signup');
-  const [email, setEmail] = useState('himaliamit1@gmail.com');
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingProvider, setLoadingProvider] = useState<'google' | 'instagram' | 'email' | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleGoogleAuth = () => {
-    setLoadingProvider('google');
-    setIsLoading(true);
-    setTimeout(() => {
-      const user: AuthUser = {
-        id: 'usr_g_' + Math.random().toString(36).substring(2, 9),
-        email: email.trim() || 'himaliamit1@gmail.com',
-        businessName: 'Sanchar Himalayan Crafts (काठमाडौँ)',
-        ownerName: 'Amit Shrestha',
-        phone: '+977 9801234567',
-        city: 'Kathmandu Valley',
-        primaryChannel: 'all',
-        role: 'MERCHANT_ADMIN',
-        avatarInitials: 'AS',
-        loginTimestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-
-      try {
-        localStorage.setItem('socialsync_auth_user', JSON.stringify(user));
-      } catch {
-        // ignore
-      }
-
-      setLoadingProvider(null);
-      setIsLoading(false);
-      onLoginSuccess(user);
-    }, 600);
-  };
-
-  const handleInstagramAuth = () => {
-    setLoadingProvider('instagram');
-    setIsLoading(true);
-    setTimeout(() => {
-      const user: AuthUser = {
-        id: 'usr_ig_' + Math.random().toString(36).substring(2, 9),
-        email: email.trim() || 'himaliamit1@gmail.com',
-        businessName: 'Sanchar Himalayan Crafts (काठमाडौँ)',
-        ownerName: 'Amit Shrestha',
-        phone: '+977 9841234567',
-        city: 'Kathmandu Valley',
-        primaryChannel: 'instagram',
-        role: 'MERCHANT_ADMIN',
-        avatarInitials: 'IG',
-        loginTimestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-
-      try {
-        localStorage.setItem('socialsync_auth_user', JSON.stringify(user));
-      } catch {
-        // ignore
-      }
-
-      setLoadingProvider(null);
-      setIsLoading(false);
-      onLoginSuccess(user);
-    }, 600);
-  };
-
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
-
-    setLoadingProvider('email');
     setIsLoading(true);
-    setTimeout(() => {
-      const user: AuthUser = {
-        id: 'usr_em_' + Math.random().toString(36).substring(2, 9),
-        email: email.trim(),
-        businessName: 'Sanchar Merchant Store (काठमाडौँ)',
-        ownerName: email.split('@')[0],
-        phone: '+977 9841000000',
-        city: 'Kathmandu Valley',
-        primaryChannel: 'all',
-        role: 'MERCHANT_ADMIN',
-        avatarInitials: email.slice(0, 2).toUpperCase(),
-        loginTimestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-
-      try {
-        localStorage.setItem('socialsync_auth_user', JSON.stringify(user));
-      } catch {
-        // ignore
-      }
-
-      setLoadingProvider(null);
+    setError(null);
+    try {
+      await login(email.trim(), password);
+      window.location.assign('/'); // full load so middleware sees the new cookie
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
       setIsLoading(false);
-      onLoginSuccess(user);
-    }, 650);
+    }
   };
 
   return (
@@ -153,16 +64,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           </div>
         </div>
 
-        {currentUser && onContinueAsGuest && (
-          <button
-            id="btn-return-workstation"
-            onClick={onContinueAsGuest}
-            className="pill vermilion-bg text-[#FFFDF9] hover:bg-black font-mono cursor-pointer text-xs flex items-center gap-1.5 shadow-[2px_2px_0px_#1A1A1A]"
-          >
-            <span>RETURN TO WORKSTATION ({currentUser.ownerName})</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        )}
       </header>
 
       {/* Main Split Section: Left Hero Text vs Right Matchbox Signup Card */}
@@ -268,58 +169,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
               {/* Social Login Buttons in Matchbox Style */}
               <div className="space-y-2.5">
-                {/* Button 1: Sign up with Google */}
-                <button
-                  id="btn-auth-google"
-                  type="button"
-                  onClick={handleGoogleAuth}
-                  disabled={isLoading}
-                  className="w-full py-3 px-4 bg-[#FFFDF9] hover:bg-[#F5EBE0] active:translate-y-0.5 border-2 border-black font-serif font-bold text-sm text-[#1A1A1A] flex items-center justify-center gap-3 transition-all cursor-pointer shadow-[3px_3px_0px_#1A1A1A]"
-                >
-                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
-                  <span>
-                    {loadingProvider === 'google'
-                      ? 'Connecting Google...'
-                      : authMode === 'signup'
-                      ? 'Sign up with Google'
-                      : 'Log in with Google'}
-                  </span>
-                </button>
-
                 {/* Button 2: Sign up with Instagram */}
-                <button
+                <a
                   id="btn-auth-instagram"
-                  type="button"
-                  onClick={handleInstagramAuth}
-                  disabled={isLoading}
+                  href={INSTAGRAM_LOGIN_URL}
                   className="w-full py-3 px-4 bg-[#FFFDF9] hover:bg-[#F5EBE0] active:translate-y-0.5 border-2 border-black font-serif font-bold text-sm text-[#1A1A1A] flex items-center justify-center gap-3 transition-all cursor-pointer shadow-[3px_3px_0px_#1A1A1A]"
                 >
                   <Instagram className="w-4 h-4 text-[#B8251B] shrink-0" />
-                  <span>
-                    {loadingProvider === 'instagram'
-                      ? 'Connecting Instagram...'
-                      : authMode === 'signup'
-                      ? 'Sign up with Instagram'
-                      : 'Log in with Instagram'}
-                  </span>
-                </button>
+                  <span>Continue with Instagram</span>
+                </a>
               </div>
 
               {/* Vintage Matchbox OR Divider */}
@@ -350,6 +208,24 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     className="w-full px-3 py-2 bg-white border-2 border-black font-mono text-sm text-gray-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#B8251B] shadow-[inset_1px_1px_2px_rgba(0,0,0,0.1)]"
                   />
                 </div>
+                <div>
+                  <label className="block text-xs font-mono font-bold text-[#1A1A1A] uppercase mb-1">
+                    Password *
+                  </label>
+                  <input
+                    id="input-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-white border-2 border-black font-mono text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#B8251B] shadow-[inset_1px_1px_2px_rgba(0,0,0,0.1)]"
+                  />
+                </div>
+                {error && (
+                  <p role="alert" className="text-xs font-mono font-bold text-[#B8251B]">
+                    {error}
+                  </p>
+                )}
 
                 <p className="text-[10px] font-mono text-stone-600 leading-tight">
                   By signing up, you agree to Sanchar&apos;s{' '}
@@ -365,43 +241,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   disabled={isLoading}
                   className="w-full py-3 px-4 vermilion-bg hover:bg-[#961c13] active:translate-y-0.5 text-white font-serif font-black text-sm tracking-wider uppercase border-3 border-black flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[4px_4px_0px_#1A1A1A]"
                 >
-                  <span>
-                    {loadingProvider === 'email'
-                      ? 'Igniting Workstation...'
-                      : authMode === 'signup'
-                      ? 'Get started for free'
-                      : 'Log in to Sanchar'}
-                  </span>
+                  <span>{isLoading ? 'Igniting Workstation...' : 'Log in to Sanchar'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
 
-              {/* Already have an account switch */}
-              <div className="mt-4 text-center text-xs font-mono">
-                {authMode === 'signup' ? (
-                  <>
-                    <span className="text-stone-600">Already have an account? </span>
-                    <button
-                      type="button"
-                      onClick={() => setAuthMode('login')}
-                      className="font-bold text-[#B8251B] hover:underline cursor-pointer"
-                    >
-                      Log In
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-stone-600">Need a new merchant node? </span>
-                    <button
-                      type="button"
-                      onClick={() => setAuthMode('signup')}
-                      className="font-bold text-[#B8251B] hover:underline cursor-pointer"
-                    >
-                      Sign Up for free
-                    </button>
-                  </>
-                )}
-              </div>
+              <p className="mt-4 text-center text-xs font-mono text-stone-600">
+                New merchant? Connect with Instagram above to create your workspace.
+              </p>
 
               {/* Authentic Tactile Strikepad Edge across the Base */}
               <div className="mt-5 pt-3 border-t-2 border-black">
@@ -432,4 +279,4 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       </footer>
     </div>
   );
-};
+}

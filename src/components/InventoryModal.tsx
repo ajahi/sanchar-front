@@ -219,7 +219,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="text-right">
                         <div className="text-sm font-black text-[#8F1810]">
-                          Rs. {item.price.toLocaleString()}
+                          Rs. {(item.price ?? 0).toLocaleString()}
                         </div>
                         <div className="text-[9px] text-[#1A1A1A]/60">Stock: {item.stock} pcs</div>
                       </div>

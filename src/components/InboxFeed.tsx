@@ -1,3 +1,4 @@
+import { askAi } from '../api';
 import React, { useState } from 'react';
 import { ConversationThread, ChatMessage, ChannelType } from '../types';
 import { 
@@ -70,16 +71,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
       const lastCustomerMsg = [...thread.messages].reverse().find((m) => m.sender === 'customer');
       const query = lastCustomerMsg ? lastCustomerMsg.text : 'Customer inquiry';
       
-      const res = await fetch('/api/rag/process-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query,
-          channel: thread.channel,
-          confidenceThreshold
-        })
-      });
-      const data = await res.json();
+      const data = await askAi({ query: query, channel: thread.channel, confidenceThreshold });
       if (data.answer) {
         setInputText(data.answer);
       }
@@ -293,7 +285,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
                 {/* Metadata badges for AI response */}
                 <div className="flex flex-wrap gap-1.5 mt-0.5">
                   <span className="text-[9px] font-bold bg-green-800 text-white px-1.5 py-0.5 border border-black font-mono">
-                    CONFIDENCE: {conf.toFixed(2)}
+                    CONFIDENCE: {(conf ?? 0).toFixed(2)}
                   </span>
                   <span className="text-[9px] font-bold bg-[#1A2B4C] text-white px-1.5 py-0.5 border border-black font-mono">
                     SOURCE: {source}

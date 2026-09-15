@@ -2,8 +2,7 @@
 
 import dynamic from 'next/dynamic';
 
-// ssr:false — App reads localStorage during render (auth state); skip SSR to keep
-// behavior identical to the original SPA and avoid hydration mismatch.
+// ssr:false — the dashboard is a pure client-side app (mock data, timers); nothing to prerender.
 const App = dynamic(() => import('../src/App'), { ssr: false });
 
 export default function Page() {

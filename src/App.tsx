@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   ConversationThread, 
   InventoryItem, 
@@ -6,8 +6,9 @@ import {
   MetaConnectionStatus, 
   ChannelType, 
   ChatMessage,
-  AuthUser
+  AuthUser,
 } from './types';
+import { askAi, getMyTenant, logout } from './api';
 import { initialThreads, initialInventory, initialFAQs, initialMetaStatus } from './mockData';
 import { Header } from './components/Header';
 import { SidebarNav } from './components/SidebarNav';
@@ -18,7 +19,6 @@ import { MetaSettingsModal } from './components/MetaSettingsModal';
 import { InventoryModal } from './components/InventoryModal';
 import { InboundSimulatorModal } from './components/InboundSimulatorModal';
 import { Footer } from './components/Footer';
-import { AuthPage } from './components/AuthPage';
 
 export default function App() {
   // Application State
@@ -42,41 +42,22 @@ export default function App() {
   const [selectedChannelFilter, setSelectedChannelFilter] = useState<'all' | ChannelType>('all');
   const [filterNeedsHumanOnly, setFilterNeedsHumanOnly] = useState(false);
 
-  // Authentication & Merchant User State
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
-    try {
-      const saved = localStorage.getItem('socialsync_auth_user');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // ignore
-    }
-    return null;
-  });
-  const [isAuthView, setIsAuthView] = useState<boolean>(() => {
-    try {
-      return !localStorage.getItem('socialsync_auth_user');
-    } catch {
-      return true;
-    }
-  });
-
-  const handleLoginSuccess = (user: AuthUser) => {
-    setCurrentUser(user);
-    if (user.businessName) {
-      setBusinessName(user.businessName);
-    }
-    setIsAuthView(false);
+  const handleSignOut = async () => {
+    await logout();
+    window.location.assign('/login');
   };
 
-  const handleSignOut = () => {
-    try {
-      localStorage.removeItem('socialsync_auth_user');
-    } catch {
-      // ignore
-    }
-    setCurrentUser(null);
-    setIsAuthView(true);
-  };
+  // Who am I (the session cookie is httpOnly; the backend resolves it).
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  useEffect(() => {
+    getMyTenant()
+      .then((t) => {
+        setBusinessName(t.name);
+        setCurrentUser({ id: t.id, email: '', businessName: t.name, ownerName: t.owner_name ?? t.name });
+      })
+      // Clear the cookie too, or middleware bounces /login straight back here (reload loop).
+      .catch(handleSignOut);
+  }, []);
 
   // Latency and token stats
   const [tokenUsage, setTokenUsage] = useState(412);
@@ -168,17 +149,7 @@ export default function App() {
     // Run Context-Aware RAG API
     const startTime = performance.now();
     try {
-      const res = await fetch('/api/rag/process-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: customerText,
-          channel: targetThread.channel,
-          confidenceThreshold,
-        }),
-      });
-
-      const ragData = await res.json();
+      const ragData = await askAi({ query: customerText, channel: targetThread.channel, confidenceThreshold });
       const elapsed = Math.round(performance.now() - startTime);
       setLatencyMs(elapsed > 0 ? elapsed : 110);
       setTokenUsage((prev) => prev + Math.floor(customerText.length / 3) + 45);
@@ -258,16 +229,7 @@ export default function App() {
 
     // Call RAG for automated response
     try {
-      const res = await fetch('/api/rag/process-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: payload.messageText,
-          channel: payload.channel,
-          confidenceThreshold,
-        }),
-      });
-      const ragData = await res.json();
+      const ragData = await askAi({ query: payload.messageText, channel: payload.channel, confidenceThreshold });
 
       const aiMsg: ChatMessage = {
         id: `msg-ai-${Date.now()}`,
@@ -315,16 +277,6 @@ export default function App() {
     setFaqs((prev) => [...prev, faq]);
   };
 
-  if (isAuthView) {
-    return (
-      <AuthPage
-        onLoginSuccess={handleLoginSuccess}
-        currentUser={currentUser}
-        onContinueAsGuest={() => setIsAuthView(false)}
-      />
-    );
-  }
-
   return (
     <div
       id="app-root-container"
@@ -345,7 +297,6 @@ export default function App() {
         unresolvedEscalationsCount={unresolvedEscalationsCount}
         onOpenNewInboundModal={() => setIsInboundModalOpen(true)}
         currentUser={currentUser}
-        onOpenAuthPage={() => setIsAuthView(true)}
         onSignOut={handleSignOut}
       />
 

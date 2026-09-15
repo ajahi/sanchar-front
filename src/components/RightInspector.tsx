@@ -46,7 +46,7 @@ export const RightInspector: React.FC<RightInspectorProps> = ({
             <p className="text-[9px] font-bold text-[#1A1A1A]/60 uppercase">
               ENTITY EXTRACTION
             </p>
-            {activeThread && activeThread.extractedEntities.length > 0 ? (
+            {activeThread?.extractedEntities?.length ? (
               <div className="flex flex-wrap gap-1 mt-1">
                 {activeThread.extractedEntities.map((ent, idx) => (
                   <span
@@ -97,7 +97,7 @@ export const RightInspector: React.FC<RightInspectorProps> = ({
             >
               <span className="truncate pr-1 font-medium">{item.name.split(' (')[0]}</span>
               <span className="font-bold text-[#8F1810] whitespace-nowrap">
-                Rs. {item.price.toLocaleString()}
+                Rs. {(item.price ?? 0).toLocaleString()}
               </span>
             </div>
           ))}

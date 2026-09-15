@@ -209,7 +209,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                   )}
 
                   <span className="text-[9px] font-mono font-bold bg-[#E09A25] text-black px-1 border border-black">
-                    CONF: {thread.confidenceScore.toFixed(2)}
+                    CONF: {(thread.confidenceScore ?? 0).toFixed(2)}
                   </span>
                 </div>
               </div>
