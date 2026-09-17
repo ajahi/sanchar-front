@@ -8,8 +8,8 @@ import {
   ChatMessage,
   AuthUser,
 } from './types';
-import { askAi, getMyTenant, logout } from './api';
-import { initialThreads, initialInventory, initialFAQs, initialMetaStatus } from './mockData';
+import { askAi, getMyTenant, listConversations, listMessages, logout, sendReply } from './api';
+import { initialInventory, initialFAQs, initialMetaStatus } from './mockData';
 import { Header } from './components/Header';
 import { SidebarNav } from './components/SidebarNav';
 import { InboxFeed } from './components/InboxFeed';
@@ -24,8 +24,8 @@ export default function App() {
   // Application State
   const [businessName, setBusinessName] = useState('Himalayan Silk & Handicrafts (काठमाडौँ)');
   const [defaultLanguage, setDefaultLanguage] = useState<'nepali' | 'nepglish' | 'english'>('nepglish');
-  const [threads, setThreads] = useState<ConversationThread[]>(initialThreads);
-  const [activeThreadId, setActiveThreadId] = useState<string>('thread-01');
+  const [threads, setThreads] = useState<ConversationThread[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState<string>('');
   const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
   const [faqs, setFaqs] = useState<FAQItem[]>(initialFAQs);
   const [metaStatus, setMetaStatus] = useState<MetaConnectionStatus>(initialMetaStatus);
@@ -58,6 +58,40 @@ export default function App() {
       // Clear the cookie too, or middleware bounces /login straight back here (reload loop).
       .catch(handleSignOut);
   }, []);
+
+  // Real inbox: conversations from the backend (fed by the Instagram webhook).
+  // ponytail: 5s polling; swap for SSE/websocket when it matters. Loaded messages are kept
+  // across polls so the open thread does not flicker.
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      listConversations()
+        .then((fresh) => {
+          if (!alive) return;
+          setThreads((prev) =>
+            fresh.map((t) => ({ ...t, messages: prev.find((p) => p.id === t.id)?.messages ?? [] }))
+          );
+          setActiveThreadId((id) => id || fresh[0]?.id || '');
+        })
+        .catch(console.error);
+    load();
+    const id = setInterval(load, 5000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, []);
+
+  // Messages for the open thread (refetched on each poll tick via last_message_at change).
+  const activeThreadLastSeen = threads.find((t) => t.id === activeThreadId)?.lastSeen;
+  useEffect(() => {
+    if (!activeThreadId) return;
+    listMessages(activeThreadId)
+      .then((messages) =>
+        setThreads((prev) => prev.map((t) => (t.id === activeThreadId ? { ...t, messages } : t)))
+      )
+      .catch(console.error);
+  }, [activeThreadId, activeThreadLastSeen]);
 
   // Latency and token stats
   const [tokenUsage, setTokenUsage] = useState(412);
@@ -95,8 +129,23 @@ export default function App() {
   };
 
   // Human operator sending message to active thread
-  const handleSendMessage = (text: string, sender: 'human' | 'ai') => {
+  const handleSendMessage = async (text: string, sender: 'human' | 'ai') => {
     if (!activeThread) return;
+
+    if (sender === 'human') {
+      // Real send: backend posts the DM to Instagram and returns the stored message.
+      try {
+        const sent = await sendReply(activeThread.id, text);
+        setThreads((prev) =>
+          prev.map((t) =>
+            t.id === activeThread.id ? { ...t, messages: [...t.messages, sent], lastSeen: 'Just now' } : t
+          )
+        );
+      } catch (err) {
+        alert(`Send failed: ${(err as Error).message}`);
+      }
+      return;
+    }
 
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,

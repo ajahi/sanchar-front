@@ -52,3 +52,69 @@ export async function askAi(body: {
   if (!res.ok) throw new Error('AI reply failed');
   return res.json();
 }
+
+// ---- Inbox (real Instagram DMs via the backend webhook) ----
+import type { ChatMessage, ConversationThread } from './types';
+
+interface ConversationDto {
+  id: string;
+  channel: 'instagram';
+  status: string;
+  mode: string;
+  last_message_at: string | null;
+  customer_id: string;
+  customer_name: string | null;
+  customer_username: string | null;
+}
+
+interface MessageDto {
+  id: string;
+  sender_type: 'customer' | 'ai' | 'agent' | 'system';
+  message_type: string;
+  content: string | null;
+  media_url: string | null;
+  ai_generated: boolean;
+  created_at: string;
+}
+
+const fmtTime = (iso: string) =>
+  new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+const toChatMessage = (m: MessageDto): ChatMessage => ({
+  id: m.id,
+  sender: m.sender_type === 'customer' ? 'customer' : m.sender_type === 'ai' ? 'ai' : 'human',
+  text: m.content ?? (m.media_url ? `[${m.message_type}] ${m.media_url}` : ''),
+  timestamp: fmtTime(m.created_at),
+});
+
+const toThread = (c: ConversationDto): ConversationThread => ({
+  id: c.id,
+  channel: c.channel,
+  customerName: c.customer_name ?? c.customer_username ?? c.customer_id,
+  customerHandle: c.customer_username ? `@${c.customer_username}` : c.customer_id,
+  lastSeen: c.last_message_at ? fmtTime(c.last_message_at) : '',
+  status: c.mode === 'ai' ? 'AUTO_PILOT' : 'NEEDS_HUMAN',
+  messages: [],
+});
+
+export async function listConversations(): Promise<ConversationThread[]> {
+  const res = await fetch('/api/v1/conversations');
+  if (!res.ok) throw new Error('Failed to load conversations');
+  return ((await res.json()) as ConversationDto[]).map(toThread);
+}
+
+export async function listMessages(conversationId: string): Promise<ChatMessage[]> {
+  const res = await fetch(`/api/v1/conversations/${conversationId}/messages`);
+  if (!res.ok) throw new Error('Failed to load messages');
+  return ((await res.json()) as MessageDto[]).map(toChatMessage);
+}
+
+export async function sendReply(conversationId: string, text: string): Promise<ChatMessage> {
+  const res = await fetch(`/api/v1/conversations/${conversationId}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) throw new Error((await res.json().catch(() => null))?.detail ?? 'Send failed');
+  return toChatMessage(await res.json());
+}
