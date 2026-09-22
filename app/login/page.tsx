@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   Check, 
   ArrowRight, 
@@ -15,6 +15,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Instagram callback failures come back as /login?ig_error=...&ig_error_description=...
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const igError = q.get('ig_error');
+    if (igError) setError(`Instagram login failed: ${igError} ${q.get('ig_error_description') ?? ''}`.trim());
+  }, []);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -93,6 +93,7 @@ const toThread = (c: ConversationDto): ConversationThread => ({
   customerName: c.customer_name ?? c.customer_username ?? c.customer_id,
   customerHandle: c.customer_username ? `@${c.customer_username}` : c.customer_id,
   lastSeen: c.last_message_at ? fmtTime(c.last_message_at) : '',
+  lastMessageAt: c.last_message_at ?? '',
   status: c.mode === 'ai' ? 'AUTO_PILOT' : 'NEEDS_HUMAN',
   messages: [],
 });

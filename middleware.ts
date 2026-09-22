@@ -13,7 +13,7 @@ export function middleware(req: NextRequest) {
   }
   const hasSession = req.cookies.has('ns_session');
   const isLogin = pathname === '/login';
-  if (!hasSession && !isLogin) return NextResponse.redirect(new URL('/login', req.url));
+  if (!hasSession && !isLogin) return NextResponse.redirect(new URL('/login' + search, req.url)); // keep ?ig_error= from the OAuth callback
   if (hasSession && isLogin) return NextResponse.redirect(new URL('/', req.url));
   return NextResponse.next();
 }

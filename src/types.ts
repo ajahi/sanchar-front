@@ -97,6 +97,7 @@ export interface ConversationThread {
   senderId?: string;
   language?: LanguageCode;
   lastSeen?: string;
+  lastMessageAt?: string; // raw ISO; lastSeen is HH:MM and too coarse to use as a refetch key
   lastMessageTime?: string;
   lastMessageText?: string;
   status: ThreadStatus;

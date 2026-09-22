@@ -83,7 +83,7 @@ export default function App() {
   }, []);
 
   // Messages for the open thread (refetched on each poll tick via last_message_at change).
-  const activeThreadLastSeen = threads.find((t) => t.id === activeThreadId)?.lastSeen;
+  const activeThreadLastSeen = threads.find((t) => t.id === activeThreadId)?.lastMessageAt;
   useEffect(() => {
     if (!activeThreadId) return;
     listMessages(activeThreadId)
