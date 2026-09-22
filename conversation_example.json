@@ -1,0 +1,32 @@
+{
+    "data":[
+        {"id":"aWdfZAG06MTpJR01lc3NhZA2VUaHJlYWQ6MTc4NDE0MzE2MDE5MjE3Mjk6MzQwMjgyMzY2ODQxNzEwMzAxMjQ0MjU5NDAyMzM1NTM2NjY2MjI1",
+        "updated_time":"2026-09-17T13:01:46+0000",
+        "participants":{
+            "data":[
+                {"username":"utsvuphr","id":"17841431601921729"},
+                {"username":"ajahi_amit","id":"2112398152694610"}
+                ]
+            }
+        },
+        {"id":"aWdfZAG06MTpJR01lc3NhZA2VUaHJlYWQ6MTc4NDE0MzE2MDE5MjE3Mjk6MzQwMjgyMzY2ODQxNzEwMzAxMjQ0MjU5OTI3MjI0MzMyOTE5Nzc1",
+            "updated_time":"2026-09-04T10:42:39+0000",
+                "participants":{
+                    "data":[
+                        {"username":"utsvuphr","id":"17841431601921729"},
+                        {"username":"acharyabinash7","id":"4433730993509535"}
+                        ]
+                    }
+                },
+                {"id":"aWdfZAG06MTpJR01lc3NhZA2VUaHJlYWQ6MTc4NDE0MzE2MDE5MjE3Mjk6MzQwMjgyMzY2ODQxNzEwMzAxMjQ0MjYwOTczNTk2NTcwOTU3NDYz",
+                "updated_time":"2026-09-04T06:14:39+0000",
+                "participants":
+                {"data":
+            [
+            {"username":"utsvuphr","id":"17841431601921729"},
+            {"username":"utsavupahar","id":"1041380435442681"}
+            ]
+            }
+        }
+    ]
+}        
