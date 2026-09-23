@@ -21,6 +21,10 @@ export default function LoginPage() {
     const q = new URLSearchParams(window.location.search);
     const igError = q.get('ig_error');
     if (igError) setError(`Instagram login failed: ${igError} ${q.get('ig_error_description') ?? ''}`.trim());
+    // Back button from Instagram restores this page from bfcache with the loader still up.
+    const reset = (e: PageTransitionEvent) => e.persisted && setIsLoading(false);
+    window.addEventListener('pageshow', reset);
+    return () => window.removeEventListener('pageshow', reset);
   }, []);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -38,6 +42,12 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen aged-paper text-[#1A1A1A] flex flex-col justify-between select-none relative overflow-x-hidden">
+      {isLoading && (
+        <div role="status" className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#FAF3E0]">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-black border-t-[#B8251B]" />
+          <p className="font-mono text-xs font-bold uppercase tracking-widest">Igniting Workstation...</p>
+        </div>
+      )}
       {/* Lithograph Print Corner Marks */}
       <div className="hidden sm:block absolute top-3 left-4 text-[9px] font-mono text-[#B8251B] font-bold select-none">
         + REG: 0.5MM SIVAKASI NO. 42
@@ -180,6 +190,7 @@ export default function LoginPage() {
                 <a
                   id="btn-auth-instagram"
                   href={INSTAGRAM_LOGIN_URL}
+                  onClick={() => setIsLoading(true)}
                   className="w-full py-3 px-4 bg-[#FFFDF9] hover:bg-[#F5EBE0] active:translate-y-0.5 border-2 border-black font-serif font-bold text-sm text-[#1A1A1A] flex items-center justify-center gap-3 transition-all cursor-pointer shadow-[3px_3px_0px_#1A1A1A]"
                 >
                   <Instagram className="w-4 h-4 text-[#B8251B] shrink-0" />
