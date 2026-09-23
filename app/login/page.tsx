@@ -8,6 +8,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { SancharLogo } from '../../src/components/SancharLogo';
+import { Loader } from '../../src/components/Loader';
 import { INSTAGRAM_LOGIN_URL, login } from '../../src/api';
 
 export default function LoginPage() {
@@ -42,12 +43,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen aged-paper text-[#1A1A1A] flex flex-col justify-between select-none relative overflow-x-hidden">
-      {isLoading && (
-        <div role="status" className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#FAF3E0]">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-black border-t-[#B8251B]" />
-          <p className="font-mono text-xs font-bold uppercase tracking-widest">Igniting Workstation...</p>
-        </div>
-      )}
+      {isLoading && <Loader />}
       {/* Lithograph Print Corner Marks */}
       <div className="hidden sm:block absolute top-3 left-4 text-[9px] font-mono text-[#B8251B] font-bold select-none">
         + REG: 0.5MM SIVAKASI NO. 42
