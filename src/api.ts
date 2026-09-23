@@ -83,7 +83,9 @@ const fmtTime = (iso: string) =>
 const toChatMessage = (m: MessageDto): ChatMessage => ({
   id: m.id,
   sender: m.sender_type === 'customer' ? 'customer' : m.sender_type === 'ai' ? 'ai' : 'human',
-  text: m.content ?? (m.media_url ? `[${m.message_type}] ${m.media_url}` : ''),
+  text: m.content ?? '',
+  mediaUrl: m.media_url ?? undefined,
+  mediaType: m.message_type,
   timestamp: fmtTime(m.created_at),
 });
 

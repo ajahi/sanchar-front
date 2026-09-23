@@ -15,6 +15,26 @@ import {
   ArrowRight
 } from 'lucide-react';
 
+// Native media elements. Instagram CDN urls expire; a dead image falls back to its alt text.
+const Attachment: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
+  const url = msg.mediaUrl;
+  if (!url) return msg.text ? null : <span className="italic text-black/50">[Unsupported message — view in Instagram]</span>;
+  const box = 'block mt-2 max-h-64 max-w-full border-2 border-black';
+  if (msg.mediaType === 'image')
+    return (
+      <a href={url} target="_blank" rel="noreferrer">
+        <img src={url} alt="Image expired — view in Instagram" className={box} />
+      </a>
+    );
+  if (msg.mediaType === 'video') return <video src={url} controls className={box} />;
+  if (msg.mediaType === 'audio') return <audio src={url} controls className="block mt-2 max-w-full" />;
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className="block mt-2 underline font-bold">
+      📎 View {msg.mediaType?.replace('_', ' ') ?? 'attachment'}
+    </a>
+  );
+};
+
 interface InboxFeedProps {
   thread: ConversationThread | null;
   onSendMessage: (text: string, sender: 'human' | 'ai') => void;
@@ -255,6 +275,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
                 <div className="matchbox-border p-3.5 bg-white relative">
                   <p className="text-sm font-mono leading-relaxed text-[#1A1A1A] select-text">
                     {msg.text}
+                    <Attachment msg={msg} />
                   </p>
                   <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-black rotate-45 pointer-events-none"></div>
                 </div>
@@ -278,6 +299,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
                 <div className="matchbox-border p-3.5 mustard-bg relative text-left">
                   <p className="text-sm font-mono leading-relaxed text-[#1A1A1A] italic select-text">
                     {msg.text}
+                    <Attachment msg={msg} />
                   </p>
                   <div className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-[#B8251B] rotate-45 pointer-events-none"></div>
                 </div>
@@ -320,6 +342,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
               <div className="matchbox-border p-3.5 bg-white border-2 border-[#1A1A1A] relative text-left">
                 <p className="text-sm font-mono leading-relaxed text-[#1A1A1A] select-text">
                   {msg.text}
+                  <Attachment msg={msg} />
                 </p>
                 <div className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-[#1A2B4C] rotate-45 pointer-events-none"></div>
               </div>

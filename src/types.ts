@@ -80,6 +80,8 @@ export interface ChatMessage {
   sender: 'customer' | 'ai' | 'human';
   text: string;
   timestamp: string;
+  mediaUrl?: string;
+  mediaType?: string; // backend message_type: image | video | audio | share | story_mention | ig_reel | file …
   confidence?: number;
   source?: string;
   intent?: string;
