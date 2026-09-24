@@ -6,45 +6,69 @@ import { getInstagramProfiles, type InstagramProfile } from '../api';
 
 const fmt = (n: number | null) => (n == null ? '—' : n.toLocaleString());
 
-// One connected Instagram professional account (instagram_business_basic fields).
-function ProfileCard({ p }: { p: InstagramProfile }) {
-  const rows: [string, string][] = [
-    ['Name', p.name ?? '—'],
-    ['Instagram ID', p.id],
-    ['Account type', p.account_type ?? '—'],
-    ['Followers', fmt(p.followers_count)],
-    ['Following', fmt(p.follows_count)],
-    ['Posts', fmt(p.media_count)],
-    ['Connected', new Date(p.connected_at).toLocaleDateString()],
-  ];
+function Stat({ label, value }: { label: string; value: number | null }) {
   return (
-    <section className="flex flex-col items-center text-center gap-4">
-      {p.profile_picture_url ? (
-        <img
-          src={p.profile_picture_url}
-          alt={`${p.username ?? 'Instagram'} profile picture`}
-          className="w-24 h-24 rounded-full border-4 border-black object-cover"
-        />
-      ) : (
-        <div className="w-24 h-24 rounded-full border-4 border-black flex items-center justify-center">
-          <Instagram className="w-9 h-9 text-[#B8251B]" />
+    <div className="border-2 border-black bg-[#FAF3E0] p-2 text-center shadow-[2px_2px_0px_#1A1A1A]">
+      <p className="text-base font-black tabular-nums">{fmt(value)}</p>
+      <p className="text-[9px] font-bold uppercase tracking-wide">{label}</p>
+    </div>
+  );
+}
+
+// One connected Instagram professional account (instagram_business_basic fields),
+// styled like the Channels modal's cards.
+function ProfileCard({ p }: { p: InstagramProfile }) {
+  return (
+    <div className="matchbox-border p-4 bg-white space-y-4">
+      <div className="flex items-center gap-4">
+        {p.profile_picture_url ? (
+          <img
+            src={p.profile_picture_url}
+            alt={`${p.username ?? 'Instagram'} profile picture`}
+            className="w-20 h-20 rounded-full border-4 border-black object-cover shadow-[3px_3px_0px_#B8251B] shrink-0"
+          />
+        ) : (
+          <div className="w-20 h-20 rounded-full border-4 border-black vermilion-bg flex items-center justify-center shadow-[3px_3px_0px_#1A1A1A] shrink-0">
+            <Instagram className="w-8 h-8 text-[#FAF3E0]" />
+          </div>
+        )}
+        <div className="min-w-0 space-y-1.5">
+          <p className="serif-heading text-lg leading-tight truncate">{p.username ? `@${p.username}` : '—'}</p>
+          {p.name && <p className="text-[11px] truncate">{p.name}</p>}
+          <div className="flex flex-wrap gap-1.5">
+            {p.live ? (
+              <span className="pill bg-emerald-800 text-white text-[8px]">● CONNECTED</span>
+            ) : (
+              <span className="pill bg-[#B8251B] text-white text-[8px]">● SAVED DETAILS</span>
+            )}
+            {p.account_type && <span className="pill mustard-bg text-black text-[8px]">{p.account_type}</span>}
+          </div>
         </div>
-      )}
-      <p className="text-lg font-black">{p.username ? `@${p.username}` : '—'}</p>
-      <div className="w-full text-left">
-        {rows.map(([k, v]) => (
-          <p key={k} className="flex justify-between gap-6 py-0.5">
-            <span className="text-stone-600 shrink-0">{k}</span>
-            <span className="font-bold break-all text-right">{v}</span>
-          </p>
-        ))}
       </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <Stat label="Followers" value={p.followers_count} />
+        <Stat label="Following" value={p.follows_count} />
+        <Stat label="Posts" value={p.media_count} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 text-[11px]">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase mb-0.5">Instagram ID</p>
+          <p className="font-bold break-all">{p.id}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase mb-0.5">Connected</p>
+          <p className="font-bold">{new Date(p.connected_at).toLocaleDateString()}</p>
+        </div>
+      </div>
+
       {!p.live && (
-        <p className="text-xs text-[#B8251B]">
+        <p className="text-[10px] text-[#B8251B] font-bold">
           Instagram didn&apos;t respond — showing saved details. Log in with Instagram again to refresh.
         </p>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -67,28 +91,35 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
       ref={ref}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
-      className="m-auto w-[92vw] max-w-md max-h-[90vh] p-0 aged-paper text-[#1A1A1A] font-mono border-4 border-black shadow-[8px_8px_0px_#1A1A1A] backdrop:bg-black/60 select-text"
+      className="m-auto w-[92vw] max-w-md max-h-[90vh] p-0 matchbox-border bg-[#FAF3E0] text-[#1A1A1A] shadow-[8px_8px_0px_#1A1A1A] backdrop:bg-black/60 select-text"
     >
-      <div className="p-6 sm:p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-serif font-black uppercase">Instagram profile</h2>
-          <button onClick={onClose} aria-label="Close" className="cursor-pointer">
-            <X className="w-5 h-5" />
+      <div className="flex flex-col max-h-[90vh]">
+        {/* Red title bar, as in the Channels modal */}
+        <div className="vermilion-bg text-white p-3 border-b-4 border-black flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            <Instagram className="w-5 h-5 text-amber-300" />
+            <h2 className="serif-heading text-lg tracking-tight">Instagram Profile</h2>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="p-1 hover:bg-black text-white border border-white/40 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
-        {error ? (
-          <p className="text-[#B8251B]">{error}</p>
-        ) : !profiles ? (
-          <p className="text-stone-600">Loading…</p>
-        ) : profiles.length === 0 ? (
-          <p className="text-stone-600">No Instagram account connected yet.</p>
-        ) : (
-          <div className="flex flex-col gap-10">
-            {profiles.map((p) => (
-              <ProfileCard key={p.id} p={p} />
-            ))}
-          </div>
-        )}
+
+        <div className="p-4 overflow-y-auto space-y-4 font-mono text-xs">
+          {error ? (
+            <p className="text-[#B8251B] font-bold">{error}</p>
+          ) : !profiles ? (
+            <p className="text-stone-600">Loading…</p>
+          ) : profiles.length === 0 ? (
+            <p className="text-stone-600">No Instagram account connected yet.</p>
+          ) : (
+            profiles.map((p) => <ProfileCard key={p.id} p={p} />)
+          )}
+        </div>
       </div>
     </dialog>
   );
