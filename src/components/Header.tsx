@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Settings, Database, Flame, User, LogOut } from 'lucide-react';
+import { Sparkles, Settings, Database, Flame, User, LogOut, Menu, X } from 'lucide-react';
 import { MetaConnectionStatus, AuthUser } from '../types';
 import { SancharLogo } from './SancharLogo';
 
@@ -8,7 +8,6 @@ interface HeaderProps {
   activeTab: 'inbox' | 'sandbox' | 'inventory' | 'settings';
   setActiveTab: (tab: 'inbox' | 'sandbox' | 'inventory' | 'settings') => void;
   metaStatus: MetaConnectionStatus;
-  confidenceThreshold: number;
   unresolvedEscalationsCount: number;
   onOpenNewInboundModal: () => void;
   currentUser?: AuthUser | null;
@@ -20,15 +19,15 @@ export const Header: React.FC<HeaderProps> = ({
   businessName,
   activeTab,
   setActiveTab,
-  confidenceThreshold,
   unresolvedEscalationsCount,
   onOpenNewInboundModal,
   currentUser,
   onOpenAuthPage,
   onSignOut,
 }) => {
+  const [menuOpen, setMenuOpen] = React.useState(false);
   return (
-    <header className="flex items-center justify-between px-3 sm:px-4 py-2.5 border-b-4 border-black vermilion-bg text-white select-none shrink-0 flex-wrap gap-2">
+    <header className="relative flex items-center justify-between px-3 sm:px-4 py-2.5 border-b-4 border-black vermilion-bg text-white select-none shrink-0 flex-wrap gap-2">
       {/* Brand & Vintage Matchbox Emblem */}
       <div className="flex items-center gap-2.5">
         <div className="h-10 w-10 bg-[#FAF3E0] border-2 border-black flex items-center justify-center p-1 shadow-[2px_2px_0px_#1A1A1A]">
@@ -50,8 +49,24 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
+      {/* Hamburger (below lg only) */}
+      <button
+        onClick={() => setMenuOpen(!menuOpen)}
+        aria-label="Menu"
+        aria-expanded={menuOpen}
+        className="lg:hidden pill aged-paper text-black cursor-pointer shadow-[2px_2px_0px_#1A1A1A]"
+      >
+        {menuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+      </button>
+
+      {/* Below lg: panel floating over the page under the header. lg+: `contents` drops this
+          wrapper so the layout is unchanged. Any click inside (tab, logout…) closes the panel. */}
+      <div
+        onClick={() => setMenuOpen(false)}
+        className={`${menuOpen ? 'flex' : 'hidden'} absolute top-full inset-x-0 z-[9999] flex-col items-start gap-2 p-3 vermilion-bg border-b-4 border-black shadow-[0_4px_0_#1A1A1A] lg:contents`}
+      >
       {/* Navigation tabs & Action Pills */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
         <button
           id="nav-inbox-btn"
           onClick={() => setActiveTab('inbox')}
@@ -80,8 +95,7 @@ export const Header: React.FC<HeaderProps> = ({
           }`}
         >
           <Sparkles className="w-3 h-3 text-[#B8251B]" />
-          <span className="hidden sm:inline">RAG SANDBOX</span>
-          <span className="sm:hidden">SANDBOX</span>
+          <span>RAG SANDBOX</span>
         </button>
 
         <button
@@ -94,7 +108,7 @@ export const Header: React.FC<HeaderProps> = ({
           }`}
         >
           <Database className="w-3 h-3 text-[#1A2B4C]" />
-          <span className="hidden sm:inline">CATALOG</span>
+          <span>CATALOG</span>
         </button>
 
         <button
@@ -107,14 +121,14 @@ export const Header: React.FC<HeaderProps> = ({
           }`}
         >
           <Settings className="w-3 h-3 text-[#1A1A1A]" />
-          <span className="hidden md:inline">CHANNELS</span>
+          <span>CHANNELS</span>
         </button>
 
         {/* Quick inbound message simulation trigger */}
         <button
           id="trigger-inbound-btn"
           onClick={onOpenNewInboundModal}
-          className="pill bg-[#1A1A1A] text-white hover:bg-black cursor-pointer shadow-[2px_2px_0px_#FAF3E0] hidden lg:flex items-center gap-1"
+          className="pill bg-[#1A1A1A] text-white hover:bg-black cursor-pointer shadow-[2px_2px_0px_#FAF3E0] flex items-center gap-1"
           title="Simulate incoming WhatsApp/Instagram/Facebook customer query"
         >
           <Flame className="w-3 h-3 text-amber-400 fill-amber-400" />
@@ -135,7 +149,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="w-4 h-4 vermilion-bg text-white text-[8px] flex items-center justify-center font-bold border border-black">
                 {currentUser.avatarInitials || 'NP'}
               </span>
-              <span className="hidden sm:inline font-bold text-[10px] max-w-[100px] truncate">
+              <span className="font-bold text-[10px] max-w-[100px] truncate">
                 {currentUser.ownerName || currentUser.email.split('@')[0]}
               </span>
             </button>
@@ -148,7 +162,7 @@ export const Header: React.FC<HeaderProps> = ({
                 title="Sign out to Root Login / Signup page"
               >
                 <LogOut className="w-3 h-3 text-amber-300" />
-                <span className="hidden md:inline">LOGOUT</span>
+                <span>LOGOUT</span>
               </button>
             )}
           </div>
@@ -162,12 +176,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span>LOGIN / SIGN UP</span>
           </button>
         )}
-
-        <div className="hidden xl:flex items-center gap-1.5">
-          <span className="pill mustard-bg text-black font-mono text-[9px]">
-            THRESHOLD: {confidenceThreshold.toFixed(2)}
-          </span>
-        </div>
+      </div>
       </div>
     </header>
   );

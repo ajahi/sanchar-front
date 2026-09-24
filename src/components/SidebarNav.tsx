@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConversationThread, ChannelType } from '../types';
-import { MessageSquare, Instagram, Facebook, AlertTriangle, ShieldCheck, Filter, Sliders } from 'lucide-react';
+import { MessageSquare, Instagram, Facebook, AlertTriangle, ShieldCheck, Filter } from 'lucide-react';
 
 interface SidebarNavProps {
   threads: ConversationThread[];
@@ -10,8 +10,6 @@ interface SidebarNavProps {
   onChangeChannelFilter: (filter: 'all' | ChannelType) => void;
   filterNeedsHumanOnly: boolean;
   onToggleNeedsHumanFilter: () => void;
-  confidenceThreshold: number;
-  onChangeConfidenceThreshold: (val: number) => void;
 }
 
 export const SidebarNav: React.FC<SidebarNavProps> = ({
@@ -22,8 +20,6 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
   onChangeChannelFilter,
   filterNeedsHumanOnly,
   onToggleNeedsHumanFilter,
-  confidenceThreshold,
-  onChangeConfidenceThreshold,
 }) => {
   // Filter threads
   const filteredThreads = threads.filter((t) => {
@@ -218,39 +214,6 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
         )}
       </div>
 
-      {/* RAG Confidence Threshold Matchbox Widget */}
-      <div className="matchbox-border p-3 mustard-bg mt-auto select-none shrink-0">
-        <div className="flex items-center justify-between">
-          <p className="text-[10px] font-black uppercase leading-tight font-serif">
-            AI CONFIDENCE THRESHOLD
-          </p>
-          <Sliders className="w-3.5 h-3.5" />
-        </div>
-        <div className="flex items-baseline justify-between mt-1">
-          <p className="text-2xl font-black font-mono">
-            {confidenceThreshold.toFixed(2)}
-          </p>
-          <span className="text-[9px] font-bold uppercase bg-black text-white px-1 py-0.2">
-            ESCALATE IF &lt; {confidenceThreshold.toFixed(2)}
-          </span>
-        </div>
-
-        <input
-          id="confidence-threshold-slider"
-          type="range"
-          min="0.50"
-          max="0.95"
-          step="0.05"
-          value={confidenceThreshold}
-          onChange={(e) => onChangeConfidenceThreshold(parseFloat(e.target.value))}
-          className="w-full mt-2 accent-[#B8251B] cursor-pointer"
-        />
-        <div className="flex justify-between text-[8px] font-mono font-bold mt-0.5 opacity-80">
-          <span>0.50 (Permissive)</span>
-          <span>0.75 (Default)</span>
-          <span>0.95 (Strict)</span>
-        </div>
-      </div>
     </aside>
   );
 };

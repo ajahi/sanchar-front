@@ -29,9 +29,11 @@ export default function App() {
   const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
   const [faqs, setFaqs] = useState<FAQItem[]>(initialFAQs);
   const [metaStatus, setMetaStatus] = useState<MetaConnectionStatus>(initialMetaStatus);
-  const [confidenceThreshold, setConfidenceThreshold] = useState<number>(0.75);
+  const confidenceThreshold = 0.75; // escalate to a human below this AI confidence
 
   // Navigation & Modals
+  // Phones (< md) show one pane at a time, messenger-style: the chat list, or the open chat.
+  const [mobileChatOpen, setMobileChatOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'inbox' | 'sandbox' | 'inventory' | 'settings'>('inbox');
   const [isSandboxOpen, setIsSandboxOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -342,7 +344,6 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={handleTabChange}
         metaStatus={metaStatus}
-        confidenceThreshold={confidenceThreshold}
         unresolvedEscalationsCount={unresolvedEscalationsCount}
         onOpenNewInboundModal={() => setIsInboundModalOpen(true)}
         currentUser={currentUser}
@@ -352,29 +353,39 @@ export default function App() {
       {/* Main 12-Column High Density Workspace */}
       <main className="flex-1 grid grid-cols-12 gap-0 overflow-hidden min-h-0">
         {/* Left Column: Feeds & Navigation */}
-        <div className="col-span-12 md:col-span-4 lg:col-span-3 xl:col-span-2 overflow-hidden h-full">
+        <div className={`${mobileChatOpen ? 'hidden' : ''} md:block col-span-12 md:col-span-4 lg:col-span-3 xl:col-span-2 overflow-hidden h-full`}>
           <SidebarNav
             threads={threads}
             activeThreadId={activeThreadId}
-            onSelectThread={(id) => setActiveThreadId(id)}
+            onSelectThread={(id) => {
+              setActiveThreadId(id);
+              setMobileChatOpen(true);
+            }}
             selectedChannelFilter={selectedChannelFilter}
             onChangeChannelFilter={(filter) => setSelectedChannelFilter(filter)}
             filterNeedsHumanOnly={filterNeedsHumanOnly}
             onToggleNeedsHumanFilter={() => setFilterNeedsHumanOnly(!filterNeedsHumanOnly)}
-            confidenceThreshold={confidenceThreshold}
-            onChangeConfidenceThreshold={(val) => setConfidenceThreshold(val)}
           />
         </div>
 
         {/* Center Column: Omnichannel Live Feed & Operator Controls */}
-        <div className="col-span-12 md:col-span-8 lg:col-span-6 xl:col-span-7 overflow-hidden h-full">
-          <InboxFeed
-            thread={activeThread}
-            onSendMessage={handleSendMessage}
-            onToggleTakeover={handleToggleTakeover}
-            onSimulateInboundCustomerMessage={handleSimulateInboundCustomerMessage}
-            confidenceThreshold={confidenceThreshold}
-          />
+        <div className={`${mobileChatOpen ? 'flex' : 'hidden'} md:flex flex-col col-span-12 md:col-span-8 lg:col-span-6 xl:col-span-7 overflow-hidden h-full`}>
+          <button
+            onClick={() => setMobileChatOpen(false)}
+            className="md:hidden flex items-center gap-2 px-3 py-2 border-b-2 border-black aged-paper font-mono text-xs font-bold uppercase shrink-0"
+          >
+            ← Chats
+            <span className="truncate normal-case">{activeThread?.customerName}</span>
+          </button>
+          <div className="flex-1 min-h-0">
+            <InboxFeed
+              thread={activeThread}
+              onSendMessage={handleSendMessage}
+              onToggleTakeover={handleToggleTakeover}
+              onSimulateInboundCustomerMessage={handleSimulateInboundCustomerMessage}
+              confidenceThreshold={confidenceThreshold}
+            />
+          </div>
         </div>
 
         {/* Right Column: Live Context & Store Catalog Inspector */}
