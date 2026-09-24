@@ -285,7 +285,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
         {thread.messages.map((msg) => {
           if (msg.sender === 'customer') {
             return (
-              <div key={msg.id} className="flex flex-col gap-1 max-w-[85%]">
+              <div key={msg.id} className="flex flex-col gap-1 max-w-[85%] self-start items-start">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-bold indigo-text uppercase tracking-wide font-mono">
                     Customer ({thread.channel.toUpperCase()})
