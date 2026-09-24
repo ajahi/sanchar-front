@@ -7,13 +7,13 @@ import { initialMetaStatus } from '../mockData';
 import type { AuthUser } from '../types';
 import { Header } from './Header';
 
-// The inbox's Header for standalone pages (/dashboard, /profile): loads who's signed in, and
+// The inbox's Header for standalone pages (/dashboard): loads who's signed in, and
 // sends header tabs to the inbox, which opens that view (/?tab=…).
 export function PageHeader({
   activeTab,
   escalations = 0,
 }: {
-  activeTab: 'dashboard' | 'profile';
+  activeTab: 'dashboard';
   escalations?: number;
 }) {
   const router = useRouter();

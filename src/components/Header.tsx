@@ -3,10 +3,11 @@ import { Sparkles, Settings, Database, Flame, User, LogOut, Menu, X } from 'luci
 import { MetaConnectionStatus, AuthUser } from '../types';
 import Link from 'next/link';
 import { SancharLogo } from './SancharLogo';
+import { ProfileModal } from './ProfileModal';
 
 interface HeaderProps {
   businessName: string;
-  activeTab: 'inbox' | 'sandbox' | 'inventory' | 'settings' | 'dashboard' | 'profile';
+  activeTab: 'inbox' | 'sandbox' | 'inventory' | 'settings' | 'dashboard';
   setActiveTab: (tab: 'inbox' | 'sandbox' | 'inventory' | 'settings') => void;
   metaStatus: MetaConnectionStatus;
   unresolvedEscalationsCount: number;
@@ -27,6 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSignOut,
 }) => {
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [profileOpen, setProfileOpen] = React.useState(false);
   return (
     <header className="relative flex items-center justify-between px-3 sm:px-4 py-2.5 border-b-4 border-black vermilion-bg text-white select-none shrink-0 flex-wrap gap-2">
       {/* Brand & Vintage Matchbox Emblem */}
@@ -153,12 +155,10 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-1.5 sm:gap-2">
         {currentUser ? (
           <div className="flex items-center gap-1">
-            <Link
+            <button
               id="header-user-profile-btn"
-              href="/profile"
-              className={`pill ${
-                activeTab === 'profile' ? 'mustard-bg' : 'aged-paper hover:bg-[#FCEFD2]'
-              } text-black font-mono cursor-pointer flex items-center gap-1.5 shadow-[1px_1px_0px_#1A1A1A]`}
+              onClick={() => setProfileOpen(true)}
+              className="pill aged-paper hover:bg-[#FCEFD2] text-black font-mono cursor-pointer flex items-center gap-1.5 shadow-[1px_1px_0px_#1A1A1A]"
               title={`Logged in as ${currentUser.ownerName}. View the connected Instagram profile.`}
             >
               <span className="w-4 h-4 vermilion-bg text-white text-[8px] flex items-center justify-center font-bold border border-black">
@@ -167,7 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="font-bold text-[10px] max-w-[100px] truncate">
                 {currentUser.ownerName || currentUser.email.split('@')[0]}
               </span>
-            </Link>
+            </button>
 
             {onSignOut && (
               <button
@@ -193,6 +193,10 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </div>
       </div>
+
+      {/* Outside the collapsible panel: that panel hides (display:none) when the ☰ menu closes,
+          which would hide the dialog with it. */}
+      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </header>
   );
 };
