@@ -1,5 +1,6 @@
 import { askAi } from '../api';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ConversationThread, ChatMessage, ChannelType } from '../types';
 import { 
   Send, 
@@ -15,17 +16,36 @@ import {
   ArrowRight
 } from 'lucide-react';
 
+const box = 'block mt-2 max-h-64 max-w-full border-2 border-black';
+
+// Thumbnail -> full-screen view inside the app. Native <dialog>: top layer (above everything),
+// Esc closes it for free; click anywhere closes too. Portaled to <body> because the bubble is a <p>.
+const ImageView: React.FC<{ url: string }> = ({ url }) => {
+  const ref = useRef<HTMLDialogElement>(null);
+  return (
+    <>
+      <button type="button" onClick={() => ref.current?.showModal()} className="block cursor-zoom-in">
+        <img src={url} alt="Image expired — view in Instagram" className={box} />
+      </button>
+      {createPortal(
+        <dialog
+          ref={ref}
+          onClick={() => ref.current?.close()}
+          className="m-auto bg-transparent p-0 max-w-[95vw] max-h-[95vh] backdrop:bg-black/85 cursor-zoom-out"
+        >
+          <img src={url} alt="Customer attachment" className="max-w-[95vw] max-h-[95vh] object-contain border-2 border-black" />
+        </dialog>,
+        document.body
+      )}
+    </>
+  );
+};
+
 // Native media elements. Instagram CDN urls expire; a dead image falls back to its alt text.
 const Attachment: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
   const url = msg.mediaUrl;
   if (!url) return msg.text ? null : <span className="italic text-black/50">[Unsupported message — view in Instagram]</span>;
-  const box = 'block mt-2 max-h-64 max-w-full border-2 border-black';
-  if (msg.mediaType === 'image')
-    return (
-      <a href={url} target="_blank" rel="noreferrer">
-        <img src={url} alt="Image expired — view in Instagram" className={box} />
-      </a>
-    );
+  if (msg.mediaType === 'image') return <ImageView url={url} />;
   if (msg.mediaType === 'video') return <video src={url} controls className={box} />;
   if (msg.mediaType === 'audio') return <audio src={url} controls className="block mt-2 max-w-full" />;
   return (

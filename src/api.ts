@@ -112,6 +112,23 @@ export async function listMessages(conversationId: string): Promise<ChatMessage[
   return ((await res.json()) as MessageDto[]).map(toChatMessage);
 }
 
+// ---- Dashboard (GET /api/v1/dashboard) ----
+export type ChannelCounts = Record<'whatsapp' | 'instagram' | 'facebook', number>;
+
+export interface Dashboard {
+  window_days: number;
+  new_messages: ChannelCounts;
+  top_queries: { text: string; count: number }[];
+  messages_handled: ChannelCounts;
+  handover: ChannelCounts;
+}
+
+export async function getDashboard(days = 1): Promise<Dashboard> {
+  const res = await fetch(`/api/v1/dashboard?days=${days}`);
+  if (!res.ok) throw new Error(`Failed to load dashboard (${res.status})`);
+  return res.json();
+}
+
 export async function sendReply(conversationId: string, text: string): Promise<ChatMessage> {
   const res = await fetch(`/api/v1/conversations/${conversationId}/messages`, {
     method: 'POST',

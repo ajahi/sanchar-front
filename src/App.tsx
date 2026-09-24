@@ -110,6 +110,14 @@ export default function App() {
     else if (tab === 'settings') setIsSettingsOpen(true);
   };
 
+  // Header tabs clicked on another page (e.g. /dashboard) arrive as /?tab=…; open that view once.
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    if (tab === 'sandbox' || tab === 'inventory' || tab === 'settings') handleTabChange(tab);
+    if (tab === 'inbound') setIsInboundModalOpen(true);
+    if (tab) window.history.replaceState(null, '', '/');
+  }, []);
+
   // Toggle Human takeover vs Auto-pilot
   const handleToggleTakeover = (threadId: string) => {
     setThreads((prev) =>
