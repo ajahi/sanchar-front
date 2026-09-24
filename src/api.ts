@@ -129,6 +129,26 @@ export async function getDashboard(days = 1): Promise<Dashboard> {
   return res.json();
 }
 
+// ---- Connected Instagram account(s) (GET /api/v1/social-accounts/instagram/profile) ----
+export interface InstagramProfile {
+  id: string; // Instagram user ID
+  username: string | null;
+  name: string | null;
+  account_type: string | null;
+  profile_picture_url: string | null;
+  followers_count: number | null;
+  follows_count: number | null;
+  media_count: number | null;
+  connected_at: string;
+  live: boolean; // false: Instagram didn't answer, only the stored id/username are filled
+}
+
+export async function getInstagramProfiles(): Promise<InstagramProfile[]> {
+  const res = await fetch('/api/v1/social-accounts/instagram/profile');
+  if (!res.ok) throw new Error(`Failed to load profile (${res.status})`);
+  return res.json();
+}
+
 export async function sendReply(conversationId: string, text: string): Promise<ChatMessage> {
   const res = await fetch(`/api/v1/conversations/${conversationId}/messages`, {
     method: 'POST',

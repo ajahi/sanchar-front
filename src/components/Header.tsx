@@ -6,7 +6,7 @@ import { SancharLogo } from './SancharLogo';
 
 interface HeaderProps {
   businessName: string;
-  activeTab: 'inbox' | 'sandbox' | 'inventory' | 'settings' | 'dashboard';
+  activeTab: 'inbox' | 'sandbox' | 'inventory' | 'settings' | 'dashboard' | 'profile';
   setActiveTab: (tab: 'inbox' | 'sandbox' | 'inventory' | 'settings') => void;
   metaStatus: MetaConnectionStatus;
   unresolvedEscalationsCount: number;
@@ -153,11 +153,13 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-1.5 sm:gap-2">
         {currentUser ? (
           <div className="flex items-center gap-1">
-            <button
+            <Link
               id="header-user-profile-btn"
-              onClick={onOpenAuthPage}
-              className="pill aged-paper text-black hover:bg-[#FCEFD2] font-mono cursor-pointer flex items-center gap-1.5 shadow-[1px_1px_0px_#1A1A1A]"
-              title={`Logged in as ${currentUser.ownerName} (${currentUser.email}). Click to view or switch account.`}
+              href="/profile"
+              className={`pill ${
+                activeTab === 'profile' ? 'mustard-bg' : 'aged-paper hover:bg-[#FCEFD2]'
+              } text-black font-mono cursor-pointer flex items-center gap-1.5 shadow-[1px_1px_0px_#1A1A1A]`}
+              title={`Logged in as ${currentUser.ownerName}. View the connected Instagram profile.`}
             >
               <span className="w-4 h-4 vermilion-bg text-white text-[8px] flex items-center justify-center font-bold border border-black">
                 {currentUser.avatarInitials || 'NP'}
@@ -165,7 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="font-bold text-[10px] max-w-[100px] truncate">
                 {currentUser.ownerName || currentUser.email.split('@')[0]}
               </span>
-            </button>
+            </Link>
 
             {onSignOut && (
               <button
