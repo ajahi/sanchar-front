@@ -53,12 +53,12 @@ export async function askAi(body: {
   return res.json();
 }
 
-// ---- Inbox (real Instagram DMs via the backend webhook) ----
-import type { ChatMessage, ConversationThread } from './types';
+// ---- Inbox (real Instagram DMs + WhatsApp messages via the backend webhook) ----
+import type { ChannelType, ChatMessage, ConversationThread } from './types';
 
 interface ConversationDto {
   id: string;
-  channel: 'instagram';
+  channel: ChannelType;
   status: string;
   mode: string;
   last_message_at: string | null;
@@ -93,7 +93,10 @@ const toThread = (c: ConversationDto): ConversationThread => ({
   id: c.id,
   channel: c.channel,
   customerName: c.customer_name ?? c.customer_username ?? c.customer_id,
-  customerHandle: c.customer_username ? `@${c.customer_username}` : c.customer_id,
+  // WhatsApp "usernames" are the customer's +phone — no @ in front of those.
+  customerHandle: c.customer_username
+    ? c.channel === 'whatsapp' ? c.customer_username : `@${c.customer_username}`
+    : c.customer_id,
   lastSeen: c.last_message_at ? fmtTime(c.last_message_at) : '',
   lastMessageAt: c.last_message_at ?? '',
   status: c.mode === 'ai' ? 'AUTO_PILOT' : 'NEEDS_HUMAN',
