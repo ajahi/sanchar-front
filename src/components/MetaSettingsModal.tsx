@@ -1,6 +1,37 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Settings, Check, Globe, RefreshCw, X, Shield, Key, Link2, Smartphone } from 'lucide-react';
 import { MetaConnectionStatus } from '../types';
+import { getWhatsAppAccounts, WhatsAppAccount } from '../api';
+
+const ago = (iso: string) => {
+  const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  return `${Math.floor(s / 86400)} d ago`;
+};
+
+// The three real checks behind PING: can the number send, will Meta deliver webhooks, did it.
+const waChecks = (a: WhatsAppAccount) => [
+  {
+    ok: a.status === 'CONNECTED',
+    label: 'Number & token',
+    detail: a.live ? `status ${a.status ?? 'unknown'}` : "Meta didn't answer (token revoked?)",
+  },
+  {
+    ok: !!a.subscribed_apps?.length,
+    label: 'Webhook subscription',
+    detail:
+      a.subscribed_apps === null
+        ? 'unknown until the first webhook arrives'
+        : a.subscribed_apps.join(', ') || 'no app subscribed — Meta will not deliver',
+  },
+  {
+    ok: !!a.last_webhook_at,
+    label: 'Last webhook received',
+    detail: a.last_webhook_at ? ago(a.last_webhook_at) : 'never',
+  },
+];
 
 interface MetaSettingsModalProps {
   isOpen: boolean;
@@ -23,11 +54,29 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
 }) => {
   const [bName, setBName] = useState(businessName);
   const [webhookSecret, setWebhookSecret] = useState('socialsync_meta_wh_sec_991823');
-  const [waToken, setWaToken] = useState('EAABwzL9...waba_prod_meta_v21');
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  // null = loading. PING = the same live fetch again.
+  const [waAccounts, setWaAccounts] = useState<WhatsAppAccount[] | null>(null);
+  const [waError, setWaError] = useState<string | null>(null);
+  const [waPinging, setWaPinging] = useState(false);
+
+  const loadWhatsApp = () => {
+    setWaPinging(true);
+    setWaError(null);
+    getWhatsAppAccounts()
+      .then(setWaAccounts)
+      .catch((e) => setWaError(e.message))
+      .finally(() => setWaPinging(false));
+  };
+
+  useEffect(() => {
+    if (isOpen) loadWhatsApp();
+  }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const waAllOk = !!waAccounts?.length && waAccounts.every((a) => waChecks(a).every((c) => c.ok));
 
   const handleTestPing = () => {
     setIsTestingWebhook(true);
@@ -166,32 +215,68 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
                   WhatsApp Cloud API (Meta Business)
                 </h3>
               </div>
-              <span className="pill bg-emerald-800 text-white text-[8px]">
-                ● WABA CONNECTED
-              </span>
+              <div className="flex items-center gap-2">
+                {waAccounts?.length ? (
+                  <span
+                    className={`pill text-white text-[8px] ${waAllOk ? 'bg-emerald-800' : 'bg-amber-700'}`}
+                  >
+                    {waAllOk ? '● WABA CONNECTED' : '● CHECK STATUS'}
+                  </span>
+                ) : (
+                  waAccounts && (
+                    <span className="pill bg-black/40 text-white text-[8px]">○ NOT CONNECTED</span>
+                  )
+                )}
+                <button
+                  onClick={loadWhatsApp}
+                  disabled={waPinging}
+                  className="pill bg-[#1A1A1A] text-white hover:bg-black cursor-pointer text-[9px]"
+                >
+                  {waPinging ? <RefreshCw className="w-3 h-3 animate-spin" /> : 'PING'}
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-2 text-[11px]">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <span className="opacity-70 text-[9px] block">DISPLAY PHONE NUMBER:</span>
-                  <span className="font-bold">{metaStatus.whatsapp.phoneNumber}</span>
+            <div className="space-y-3 text-[11px]">
+              {waError && (
+                <div className="p-2 bg-red-100 border border-red-700 text-red-900 text-[10px]">{waError}</div>
+              )}
+              {waAccounts === null && !waError && <div className="opacity-60">Loading…</div>}
+              {waAccounts?.length === 0 && (
+                <div className="opacity-70">No WhatsApp number is linked to this workspace yet.</div>
+              )}
+              {waAccounts?.map((a) => (
+                <div key={a.phone_number_id} className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="opacity-70 text-[9px] block">DISPLAY PHONE NUMBER:</span>
+                      <span className="font-bold">{a.display_phone_number ?? '—'}</span>
+                    </div>
+                    <div>
+                      <span className="opacity-70 text-[9px] block">VERIFIED NAME:</span>
+                      <span className="font-bold">{a.verified_name ?? '—'}</span>
+                    </div>
+                    <div>
+                      <span className="opacity-70 text-[9px] block">PHONE NUMBER ID:</span>
+                      <span className="font-mono">{a.phone_number_id}</span>
+                    </div>
+                    <div>
+                      <span className="opacity-70 text-[9px] block">WABA ID / QUALITY:</span>
+                      <span className="font-mono">
+                        {a.waba_id ?? '—'} / {a.quality_rating ?? '—'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-2 bg-[#FAF3E0]/40 border border-black text-[10px] space-y-0.5">
+                    {waChecks(a).map((c) => (
+                      <div key={c.label}>
+                        <span className={c.ok ? 'text-emerald-800' : 'text-[#B8251B]'}>{c.ok ? '✓' : '✗'}</span>{' '}
+                        <span className="font-bold">{c.label}:</span> {c.detail}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <span className="opacity-70 text-[9px] block">WABA ID:</span>
-                  <span className="font-mono">{metaStatus.whatsapp.wabaId}</span>
-                </div>
-              </div>
-
-              <div>
-                <span className="opacity-70 text-[9px] block">SYSTEM USER ACCESS TOKEN:</span>
-                <input
-                  type="password"
-                  value={waToken}
-                  onChange={(e) => setWaToken(e.target.value)}
-                  className="w-full p-1 border border-black bg-[#FAF3E0]/30 font-mono text-[10px]"
-                />
-              </div>
+              ))}
             </div>
           </div>
 

@@ -152,6 +152,27 @@ export async function getInstagramProfiles(): Promise<InstagramProfile[]> {
   return res.json();
 }
 
+// ---- Connected WhatsApp number(s) (GET /api/v1/social-accounts/whatsapp) ----
+// Also the Channels PING: status CONNECTED, subscribed_apps non-empty, a recent last_webhook_at.
+export interface WhatsAppAccount {
+  phone_number_id: string;
+  display_phone_number: string | null;
+  verified_name: string | null;
+  status: string | null; // CONNECTED = token + number can send
+  quality_rating: string | null; // GREEN / YELLOW / RED
+  waba_id: string | null; // known after the first webhook
+  subscribed_apps: string[] | null; // null = unknown (no webhook seen yet)
+  last_webhook_at: string | null;
+  connected_at: string;
+  live: boolean; // false: Meta didn't answer, only stored values are filled
+}
+
+export async function getWhatsAppAccounts(): Promise<WhatsAppAccount[]> {
+  const res = await fetch('/api/v1/social-accounts/whatsapp');
+  if (!res.ok) throw new Error(`Failed to load WhatsApp status (${res.status})`);
+  return res.json();
+}
+
 export async function sendReply(conversationId: string, text: string): Promise<ChatMessage> {
   const res = await fetch(`/api/v1/conversations/${conversationId}/messages`, {
     method: 'POST',
