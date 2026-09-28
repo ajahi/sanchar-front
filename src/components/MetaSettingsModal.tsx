@@ -5,6 +5,9 @@ import { getWhatsAppAccounts, linkWhatsApp, WhatsAppAccount } from '../api';
 
 // Tenants share their WhatsApp account with this business (Hachuwa market) as a partner.
 const SANCHAR_PARTNER_BUSINESS_ID = '3977606022464196';
+// No business_id in these: Meta opens the business the tenant is logged into (or asks which).
+const META_WA_ACCOUNTS_URL = 'https://business.facebook.com/latest/settings/whatsapp_account';
+const META_WA_MANAGER_NUMBERS_URL = 'https://business.facebook.com/wa/manage/phone-numbers/';
 
 const ago = (iso: string) => {
   const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
@@ -266,14 +269,40 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
               {waAccounts?.length === 0 && (
                 <div className="space-y-2">
                   <div className="opacity-70">No WhatsApp number is linked to this workspace yet.</div>
-                  <ol className="list-decimal pl-4 text-[10px] space-y-0.5">
+                  <ol className="list-decimal pl-4 text-[10px] space-y-1">
                     <li>
-                      Meta Business Settings → WhatsApp accounts → your account → <b>Partners</b> → share it
-                      with business ID <code className="font-bold">{SANCHAR_PARTNER_BUSINESS_ID}</code>.
+                      Open{' '}
+                      <a
+                        href={META_WA_ACCOUNTS_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline font-bold text-[#B8251B]"
+                      >
+                        Meta Business Settings → WhatsApp accounts ↗
+                      </a>
+                      , pick your account → <b>Partners</b> → <b>Add</b> (or <b>Assign partner</b>) → paste
+                      business ID <code className="font-bold">{SANCHAR_PARTNER_BUSINESS_ID}</code>{' '}
+                      <button
+                        type="button"
+                        onClick={() => navigator.clipboard?.writeText(SANCHAR_PARTNER_BUSINESS_ID)}
+                        className="underline cursor-pointer"
+                      >
+                        copy
+                      </button>{' '}
+                      → give it full control.
                     </li>
                     <li>
-                      From WhatsApp Manager, copy the number's <b>Phone number ID</b> and the <b>WhatsApp
-                      Business Account ID</b>.
+                      Open{' '}
+                      <a
+                        href={META_WA_MANAGER_NUMBERS_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline font-bold text-[#B8251B]"
+                      >
+                        WhatsApp Manager → Phone numbers ↗
+                      </a>{' '}
+                      and copy the number's <b>Phone number ID</b> and your <b>WhatsApp Business Account ID</b>{' '}
+                      into the boxes below.
                     </li>
                   </ol>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
