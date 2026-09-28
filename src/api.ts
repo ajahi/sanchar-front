@@ -173,6 +173,21 @@ export async function getWhatsAppAccounts(): Promise<WhatsAppAccount[]> {
   return res.json();
 }
 
+// Channels → Connect: link a number (already shared with Sanchar as a partner) to this workspace.
+export async function linkWhatsApp(phoneNumberId: string, wabaId: string): Promise<WhatsAppAccount> {
+  const res = await fetch('/api/v1/social-accounts/whatsapp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone_number_id: phoneNumberId, waba_id: wabaId }),
+  });
+  if (!res.ok) {
+    const detail = (await res.json().catch(() => null))?.detail;
+    // 422 = pydantic validation (an array); anything else carries a readable string
+    throw new Error(typeof detail === 'string' ? detail : 'Both IDs must be numbers from WhatsApp Manager.');
+  }
+  return res.json();
+}
+
 export async function sendReply(conversationId: string, text: string): Promise<ChatMessage> {
   const res = await fetch(`/api/v1/conversations/${conversationId}/messages`, {
     method: 'POST',

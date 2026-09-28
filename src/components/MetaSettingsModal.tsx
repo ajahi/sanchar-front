@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Settings, Check, Globe, RefreshCw, X, Shield, Key, Link2, Smartphone } from 'lucide-react';
 import { MetaConnectionStatus } from '../types';
-import { getWhatsAppAccounts, WhatsAppAccount } from '../api';
+import { getWhatsAppAccounts, linkWhatsApp, WhatsAppAccount } from '../api';
+
+// Tenants share their WhatsApp account with this business (Hachuwa market) as a partner.
+const SANCHAR_PARTNER_BUSINESS_ID = '3977606022464196';
 
 const ago = (iso: string) => {
   const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
@@ -73,6 +76,24 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
   useEffect(() => {
     if (isOpen) loadWhatsApp();
   }, [isOpen]);
+
+  const [linkPhoneId, setLinkPhoneId] = useState('');
+  const [linkWabaId, setLinkWabaId] = useState('');
+  const [linking, setLinking] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
+
+  const handleLink = () => {
+    setLinking(true);
+    setLinkError(null);
+    linkWhatsApp(linkPhoneId.trim(), linkWabaId.trim())
+      .then(() => {
+        setLinkPhoneId('');
+        setLinkWabaId('');
+        loadWhatsApp();
+      })
+      .catch((e) => setLinkError(e.message))
+      .finally(() => setLinking(false));
+  };
 
   if (!isOpen) return null;
 
@@ -243,7 +264,53 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
               )}
               {waAccounts === null && !waError && <div className="opacity-60">Loading…</div>}
               {waAccounts?.length === 0 && (
-                <div className="opacity-70">No WhatsApp number is linked to this workspace yet.</div>
+                <div className="space-y-2">
+                  <div className="opacity-70">No WhatsApp number is linked to this workspace yet.</div>
+                  <ol className="list-decimal pl-4 text-[10px] space-y-0.5">
+                    <li>
+                      Meta Business Settings → WhatsApp accounts → your account → <b>Partners</b> → share it
+                      with business ID <code className="font-bold">{SANCHAR_PARTNER_BUSINESS_ID}</code>.
+                    </li>
+                    <li>
+                      From WhatsApp Manager, copy the number's <b>Phone number ID</b> and the <b>WhatsApp
+                      Business Account ID</b>.
+                    </li>
+                  </ol>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <label className="block">
+                      <span className="opacity-70 text-[9px] block">PHONE NUMBER ID:</span>
+                      <input
+                        value={linkPhoneId}
+                        onChange={(e) => setLinkPhoneId(e.target.value)}
+                        inputMode="numeric"
+                        placeholder="e.g. 1264085063462627"
+                        className="w-full p-1 border border-black bg-[#FAF3E0]/30 font-mono text-[10px]"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="opacity-70 text-[9px] block">WHATSAPP BUSINESS ACCOUNT ID:</span>
+                      <input
+                        value={linkWabaId}
+                        onChange={(e) => setLinkWabaId(e.target.value)}
+                        inputMode="numeric"
+                        placeholder="e.g. 1594023658962737"
+                        className="w-full p-1 border border-black bg-[#FAF3E0]/30 font-mono text-[10px]"
+                      />
+                    </label>
+                  </div>
+                  {linkError && (
+                    <div className="p-2 bg-red-100 border border-red-700 text-red-900 text-[10px]">
+                      {linkError}
+                    </div>
+                  )}
+                  <button
+                    onClick={handleLink}
+                    disabled={linking || !linkPhoneId.trim() || !linkWabaId.trim()}
+                    className="pill bg-emerald-800 text-white hover:bg-emerald-900 cursor-pointer disabled:opacity-50 text-[9px]"
+                  >
+                    {linking ? 'LINKING…' : 'CONNECT WHATSAPP'}
+                  </button>
+                </div>
               )}
               {waAccounts?.map((a) => (
                 <div key={a.phone_number_id} className="space-y-2">
