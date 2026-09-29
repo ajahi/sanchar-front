@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { getDashboard, type ChannelCounts, type Dashboard } from '../api';
 import { Modal } from './Modal';
+import { Skeleton } from './Skeleton';
 
 const LABELS: Record<keyof ChannelCounts, string> = {
   whatsapp: 'WhatsApp',
@@ -66,7 +67,17 @@ export function DashboardModal({ open, onClose }: { open: boolean; onClose: () =
         {error ? (
           <p className="text-[#B8251B] font-bold">{error}</p>
         ) : !data ? (
-          <p className="text-stone-600">Loading…</p>
+          <div role="status" aria-label="Loading dashboard" className="grid gap-3 sm:grid-cols-2">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="matchbox-border bg-white p-3 space-y-2">
+                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-2 w-3/4" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-full" />
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             <Counts title="New messages" hint="Messages customers sent you." counts={data.new_messages} />

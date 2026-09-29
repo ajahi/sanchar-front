@@ -2,6 +2,7 @@ import { askAi } from '../api';
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ConversationThread, ChatMessage, ChannelType } from '../types';
+import { Skeleton } from './Skeleton';
 import { 
   Send, 
   Sparkles, 
@@ -61,9 +62,23 @@ interface InboxFeedProps {
   onToggleTakeover: (threadId: string) => void;
   onSimulateInboundCustomerMessage: (threadId: string, text: string) => void;
   confidenceThreshold: number;
+  loading: boolean; // conversations or the open thread's messages are still being fetched
 }
 
+// Alternating left/right bubbles, like the real messages.
+const MessageSkeleton: React.FC = () => (
+  <div role="status" aria-label="Loading messages" className="flex flex-col gap-5">
+    {['self-start w-[60%]', 'self-end w-[50%]', 'self-start w-[45%]'].map((pos, i) => (
+      <div key={i} className={`flex flex-col gap-1 ${pos}`}>
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-14 w-full border-2 border-black/20" />
+      </div>
+    ))}
+  </div>
+);
+
 export const InboxFeed: React.FC<InboxFeedProps> = ({
+  loading,
   thread,
   onSendMessage,
   onToggleTakeover,
@@ -76,6 +91,13 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
   const [customSimulateText, setCustomSimulateText] = useState('');
 
   if (!thread) {
+    if (loading) {
+      return (
+        <section className="flex-1 border-r-4 border-black aged-paper p-6">
+          <MessageSkeleton />
+        </section>
+      );
+    }
     return (
       <section className="flex-1 flex items-center justify-center border-r-4 border-black aged-paper p-8 text-center">
         <div className="matchbox-border p-8 bg-white max-w-md">
@@ -282,6 +304,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
 
       {/* Messages Scroll Area */}
       <div className="flex-1 p-4 md:p-6 flex flex-col gap-5 overflow-y-auto">
+        {loading && thread.messages.length === 0 && <MessageSkeleton />}
         {thread.messages.map((msg) => {
           if (msg.sender === 'customer') {
             return (

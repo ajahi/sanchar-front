@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   ConversationThread, 
   InventoryItem, 
@@ -27,6 +27,9 @@ export default function App() {
   const [defaultLanguage, setDefaultLanguage] = useState<'nepali' | 'nepglish' | 'english'>('nepglish');
   const [threads, setThreads] = useState<ConversationThread[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<string>('');
+  const [threadsLoaded, setThreadsLoaded] = useState(false);
+  const [loadingMessagesId, setLoadingMessagesId] = useState<string | null>(null);
+  const loadedMessages = useRef(new Set<string>());
   const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
   const [faqs, setFaqs] = useState<FAQItem[]>(initialFAQs);
   const [metaStatus, setMetaStatus] = useState<MetaConnectionStatus>(initialMetaStatus);
@@ -79,7 +82,8 @@ export default function App() {
           );
           setActiveThreadId((id) => id || fresh[0]?.id || '');
         })
-        .catch(console.error);
+        .catch(console.error)
+        .finally(() => alive && setThreadsLoaded(true)); // skeletons off after the first attempt, success or not
     load();
     const id = setInterval(load, 5000);
     return () => {
@@ -90,13 +94,19 @@ export default function App() {
 
   // Messages for the open thread (refetched on each poll tick via last_message_at change).
   const activeThreadLastSeen = threads.find((t) => t.id === activeThreadId)?.lastMessageAt;
+  // Skeleton only the first time a thread opens; later refetches (polls) update in place.
   useEffect(() => {
     if (!activeThreadId) return;
+    if (!loadedMessages.current.has(activeThreadId)) setLoadingMessagesId(activeThreadId);
     listMessages(activeThreadId)
       .then((messages) =>
         setThreads((prev) => prev.map((t) => (t.id === activeThreadId ? { ...t, messages } : t)))
       )
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => {
+        loadedMessages.current.add(activeThreadId);
+        setLoadingMessagesId((id) => (id === activeThreadId ? null : id));
+      });
   }, [activeThreadId, activeThreadLastSeen]);
 
   // Latency and token stats
@@ -370,6 +380,7 @@ export default function App() {
         {/* Left Column: Feeds & Navigation */}
         <div className={`${mobileChatOpen ? 'hidden' : ''} md:block col-span-12 md:col-span-4 lg:col-span-3 xl:col-span-2 overflow-hidden h-full`}>
           <SidebarNav
+            loading={!threadsLoaded}
             threads={threads}
             activeThreadId={activeThreadId}
             onSelectThread={(id) => {
@@ -394,6 +405,7 @@ export default function App() {
           </button>
           <div className="flex-1 min-h-0">
             <InboxFeed
+              loading={!threadsLoaded || loadingMessagesId === activeThread?.id}
               thread={activeThread}
               onSendMessage={handleSendMessage}
               onToggleTakeover={handleToggleTakeover}

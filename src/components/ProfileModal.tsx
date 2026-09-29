@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Instagram } from 'lucide-react';
 import { getInstagramProfiles, type InstagramProfile } from '../api';
 import { Modal } from './Modal';
+import { Skeleton } from './Skeleton';
 
 const fmt = (n: number | null) => (n == null ? '—' : n.toLocaleString());
 
@@ -90,7 +91,21 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
         {error ? (
           <p className="text-[#B8251B] font-bold">{error}</p>
         ) : !profiles ? (
-          <p className="text-stone-600">Loading…</p>
+          <div role="status" aria-label="Loading profile" className="matchbox-border p-4 bg-white space-y-4">
+            <div className="flex items-center gap-4">
+              <Skeleton className="w-20 h-20 rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-12" />
+              ))}
+            </div>
+          </div>
         ) : profiles.length === 0 ? (
           <p className="text-stone-600">No Instagram account connected yet.</p>
         ) : (

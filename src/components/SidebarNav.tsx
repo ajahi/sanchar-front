@@ -1,6 +1,7 @@
 import React from 'react';
 import { ConversationThread, ChannelType } from '../types';
 import { MessageSquare, Instagram, Facebook, AlertTriangle, ShieldCheck, Filter } from 'lucide-react';
+import { Skeleton } from './Skeleton';
 
 interface SidebarNavProps {
   threads: ConversationThread[];
@@ -10,9 +11,11 @@ interface SidebarNavProps {
   onChangeChannelFilter: (filter: 'all' | ChannelType) => void;
   filterNeedsHumanOnly: boolean;
   onToggleNeedsHumanFilter: () => void;
+  loading: boolean; // first conversations fetch still in flight
 }
 
 export const SidebarNav: React.FC<SidebarNavProps> = ({
+  loading,
   threads,
   activeThreadId,
   onSelectThread,
@@ -141,7 +144,20 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
           CONVERSATIONS ({filteredThreads.length})
         </p>
 
-        {filteredThreads.length === 0 ? (
+        {loading ? (
+          <div role="status" aria-label="Loading conversations" className="flex flex-col gap-2">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="p-2.5 border-2 border-black bg-[#FAF3E0] shadow-[2px_2px_0px_#1A1A1A] space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-3 w-8" />
+                </div>
+                <Skeleton className="h-3 w-1/3" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ))}
+          </div>
+        ) : filteredThreads.length === 0 ? (
           <div className="p-4 border-2 border-dashed border-black bg-white/60 text-center text-xs">
             No threads match the selected filter.
           </div>

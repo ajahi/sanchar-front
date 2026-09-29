@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Settings, Check, Globe, RefreshCw, Shield, Key, Link2, Smartphone } from 'lucide-react';
 import { Modal } from './Modal';
+import { Skeleton } from './Skeleton';
 import { MetaConnectionStatus } from '../types';
 import { getWhatsAppAccounts, linkWhatsApp, WhatsAppAccount } from '../api';
 
@@ -248,7 +249,13 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
               {waError && (
                 <div className="p-2 bg-red-100 border border-red-700 text-red-900 text-[10px]">{waError}</div>
               )}
-              {waAccounts === null && !waError && <div className="opacity-60">Loading…</div>}
+              {waAccounts === null && !waError && (
+                <div role="status" aria-label="Loading WhatsApp status" className="space-y-2">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-3/4" />
+                </div>
+              )}
               {waAccounts?.length === 0 && (
                 <div className="space-y-2">
                   <div className="opacity-70">No WhatsApp number is linked to this workspace yet.</div>
