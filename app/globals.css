@@ -172,3 +172,49 @@
   background-image: radial-gradient(rgba(26, 43, 76, 0.08) 15%, transparent 16%);
   background-size: 4px 4px;
 }
+
+/* ---- Modals: one place defines how every dialog opens and closes (see src/components/Modal.tsx) ----
+   Panel eases up and fades in over 250ms on an expo-out curve; closing is a quicker 150ms fade.
+   `allow-discrete` on display/overlay keeps the <dialog> in the top layer while it animates out. */
+dialog.modal {
+  opacity: 0;
+  transform: translateY(14px) scale(0.97);
+  transition:
+    opacity 150ms ease-in,
+    transform 150ms ease-in,
+    overlay 150ms allow-discrete,
+    display 150ms allow-discrete;
+}
+dialog.modal[open] {
+  opacity: 1;
+  transform: none;
+  transition-duration: 250ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+@starting-style {
+  dialog.modal[open] {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+}
+dialog.modal::backdrop {
+  background: rgb(0 0 0 / 0);
+  transition:
+    background-color 200ms ease,
+    overlay 200ms allow-discrete,
+    display 200ms allow-discrete;
+}
+dialog.modal[open]::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+@starting-style {
+  dialog.modal[open]::backdrop {
+    background: rgb(0 0 0 / 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  dialog.modal,
+  dialog.modal::backdrop {
+    transition: none;
+  }
+}

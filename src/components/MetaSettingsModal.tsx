@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, Check, Globe, RefreshCw, X, Shield, Key, Link2, Smartphone } from 'lucide-react';
+import { Settings, Check, Globe, RefreshCw, Shield, Key, Link2, Smartphone } from 'lucide-react';
+import { Modal } from './Modal';
 import { MetaConnectionStatus } from '../types';
 import { getWhatsAppAccounts, linkWhatsApp, WhatsAppAccount } from '../api';
 
@@ -98,8 +99,6 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
       .finally(() => setLinking(false));
   };
 
-  if (!isOpen) return null;
-
   const waAllOk = !!waAccounts?.length && waAccounts.every((a) => waChecks(a).every((c) => c.ok));
 
   const handleTestPing = () => {
@@ -117,23 +116,7 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 select-none">
-      <div className="matchbox-border bg-[#FAF3E0] w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-[8px_8px_0px_#1A1A1A]">
-        {/* Header */}
-        <div className="vermilion-bg text-white p-3 border-b-4 border-black flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <Settings className="w-5 h-5 text-amber-300" />
-            <h2 className="serif-heading text-lg tracking-tight">
-              Meta Integrations & Merchant Setup
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-black text-white border border-white/40 cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+    <Modal open={isOpen} onClose={onClose} title="Meta Integrations & Merchant Setup" icon={Settings} size="lg">
 
         {/* Content */}
         <div className="p-4 overflow-y-auto space-y-4 font-mono text-xs">
@@ -434,7 +417,6 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };

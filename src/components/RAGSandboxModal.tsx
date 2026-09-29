@@ -1,7 +1,8 @@
 import { askAi } from '../api';
 import React, { useState } from 'react';
-import { Sparkles, Send, Bot, AlertTriangle, ShieldCheck, CheckCircle, RefreshCw, X } from 'lucide-react';
+import { Sparkles, Send, Bot, AlertTriangle, ShieldCheck, CheckCircle, RefreshCw } from 'lucide-react';
 import { ChannelType, RAGSimulationResult } from '../types';
+import { Modal } from './Modal';
 
 interface RAGSandboxModalProps {
   isOpen: boolean;
@@ -18,8 +19,6 @@ export const RAGSandboxModal: React.FC<RAGSandboxModalProps> = ({
   const [channel, setChannel] = useState<ChannelType>('instagram');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<RAGSimulationResult | null>(null);
-
-  if (!isOpen) return null;
 
   const sampleQueries = [
     { label: '🇳🇵 Nepglish Price & Pokhara Delivery', text: 'Esko price kati ho ani Pokhara ma delivery huncha?' },
@@ -53,23 +52,7 @@ export const RAGSandboxModal: React.FC<RAGSandboxModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 select-none">
-      <div className="matchbox-border bg-[#FAF3E0] w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden shadow-[8px_8px_0px_#1A1A1A]">
-        {/* Modal Header */}
-        <div className="vermilion-bg text-white p-3 border-b-4 border-black flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-300" />
-            <h2 className="serif-heading text-lg tracking-tight">
-              Merchant RAG Testing Sandbox
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-black text-white border border-white/40 cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+    <Modal open={isOpen} onClose={onClose} title="Merchant RAG Testing Sandbox" icon={Sparkles} size="xl">
 
         {/* Modal Body */}
         <div className="p-4 overflow-y-auto space-y-4 font-mono text-xs">
@@ -262,7 +245,6 @@ export const RAGSandboxModal: React.FC<RAGSandboxModalProps> = ({
             Close Sandbox
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Database, Plus, Trash2, Upload, FileText, CheckCircle2, X } from 'lucide-react';
+import { Database, Plus, Trash2, Upload, FileText, CheckCircle2 } from 'lucide-react';
 import { InventoryItem, FAQItem } from '../types';
+import { Modal } from './Modal';
 
 interface InventoryModalProps {
   isOpen: boolean;
@@ -34,8 +35,6 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   // Upload feedback state
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
-  if (!isOpen) return null;
-
   const handleCreateProduct = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProdName.trim()) return;
@@ -62,23 +61,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 select-none">
-      <div className="matchbox-border bg-[#FAF3E0] w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden shadow-[8px_8px_0px_#1A1A1A]">
-        {/* Header */}
-        <div className="vermilion-bg text-white p-3 border-b-4 border-black flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <Database className="w-5 h-5 text-amber-300" />
-            <h2 className="serif-heading text-lg tracking-tight">
-              Merchant Store Context &amp; RAG Knowledge Base
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-black text-white border border-white/40 cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+    <Modal open={isOpen} onClose={onClose} title="Merchant Store Context & RAG Knowledge Base" icon={Database} size="xl">
 
         {/* Tab switcher */}
         <div className="flex border-b-2 border-black bg-white shrink-0">
@@ -322,7 +305,6 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
             Done
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };

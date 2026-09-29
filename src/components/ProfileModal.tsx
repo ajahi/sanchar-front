@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Instagram, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Instagram } from 'lucide-react';
 import { getInstagramProfiles, type InstagramProfile } from '../api';
+import { Modal } from './Modal';
 
 const fmt = (n: number | null) => (n == null ? '—' : n.toLocaleString());
 
@@ -72,55 +73,30 @@ function ProfileCard({ p }: { p: InstagramProfile }) {
   );
 }
 
-// Native <dialog>: top layer above everything, Esc closes it; so does a click on the backdrop.
 // Profiles are fetched each time it opens, so counts are current.
 export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const ref = useRef<HTMLDialogElement>(null);
   const [profiles, setProfiles] = useState<InstagramProfile[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open) return ref.current?.close();
-    ref.current?.showModal();
+    if (!open) return;
     setError(null);
     getInstagramProfiles().then(setProfiles).catch((e) => setError(e.message));
   }, [open]);
 
   return (
-    <dialog
-      ref={ref}
-      onClose={onClose}
-      onClick={(e) => e.target === ref.current && onClose()}
-      className="m-auto w-[92vw] max-w-md max-h-[90vh] p-0 matchbox-border bg-[#FAF3E0] text-[#1A1A1A] shadow-[8px_8px_0px_#1A1A1A] backdrop:bg-black/60 select-text"
-    >
-      <div className="flex flex-col max-h-[90vh]">
-        {/* Red title bar, as in the Channels modal */}
-        <div className="vermilion-bg text-white p-3 border-b-4 border-black flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <Instagram className="w-5 h-5 text-amber-300" />
-            <h2 className="serif-heading text-lg tracking-tight">Instagram Profile</h2>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="p-1 hover:bg-black text-white border border-white/40 cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="p-4 overflow-y-auto space-y-4 font-mono text-xs">
-          {error ? (
-            <p className="text-[#B8251B] font-bold">{error}</p>
-          ) : !profiles ? (
-            <p className="text-stone-600">Loading…</p>
-          ) : profiles.length === 0 ? (
-            <p className="text-stone-600">No Instagram account connected yet.</p>
-          ) : (
-            profiles.map((p) => <ProfileCard key={p.id} p={p} />)
-          )}
-        </div>
+    <Modal open={open} onClose={onClose} title="Instagram Profile" icon={Instagram} size="sm">
+      <div className="p-4 overflow-y-auto space-y-4 font-mono text-xs">
+        {error ? (
+          <p className="text-[#B8251B] font-bold">{error}</p>
+        ) : !profiles ? (
+          <p className="text-stone-600">Loading…</p>
+        ) : profiles.length === 0 ? (
+          <p className="text-stone-600">No Instagram account connected yet.</p>
+        ) : (
+          profiles.map((p) => <ProfileCard key={p.id} p={p} />)
+        )}
       </div>
-    </dialog>
+    </Modal>
   );
 }
