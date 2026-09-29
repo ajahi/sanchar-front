@@ -26,6 +26,7 @@ export default function LoginPage() {
   // Instagram callback failures come back as /login?ig_error=...&ig_error_description=...
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
+    if (q.get('mode') === 'signup') setMode('signup'); // shareable link: /login?mode=signup
     const igError = q.get('ig_error');
     if (igError) setError(`Instagram login failed: ${igError} ${q.get('ig_error_description') ?? ''}`.trim());
     // Back button from Instagram restores this page from bfcache with the loader still up.
@@ -205,8 +206,33 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              {/* Log in / Sign up tabs */}
+              {!sentTo && (
+                <div role="tablist" className="grid grid-cols-2 mb-4 border-2 border-black font-serif font-black text-sm uppercase">
+                  {(['login', 'signup'] as const).map((m) => (
+                    <button
+                      key={m}
+                      id={`tab-${m}`}
+                      type="button"
+                      role="tab"
+                      aria-selected={mode === m}
+                      onClick={() => { setMode(m); setError(null); setNeedsConfirm(false); }}
+                      className={`py-2 cursor-pointer ${mode === m ? 'vermilion-bg text-white' : 'bg-[#FFFDF9] hover:bg-[#F5EBE0]'}`}
+                    >
+                      {m === 'login' ? 'Log in' : 'Sign up'}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {/* Social Login Buttons in Matchbox Style */}
               <div className="space-y-2.5">
+                {signup && !sentTo && (
+                  <p className="text-xs font-mono text-stone-800 leading-snug">
+                    <b>Have an Instagram business page?</b> Sign up in one click with the button below. No
+                    form and no email confirmation needed. No Instagram? Use the email form below instead.
+                  </p>
+                )}
                 {/* Button 2: Sign up with Instagram */}
                 <a
                   id="btn-auth-instagram"
@@ -215,7 +241,7 @@ export default function LoginPage() {
                   className="w-full py-3 px-4 bg-[#FFFDF9] hover:bg-[#F5EBE0] active:translate-y-0.5 border-2 border-black font-serif font-bold text-sm text-[#1A1A1A] flex items-center justify-center gap-3 transition-all cursor-pointer shadow-[3px_3px_0px_#1A1A1A]"
                 >
                   <Instagram className="w-4 h-4 text-[#B8251B] shrink-0" />
-                  <span>Continue with Instagram</span>
+                  <span>{signup ? 'Sign up with Instagram' : 'Log in with Instagram'}</span>
                 </a>
               </div>
 
@@ -332,17 +358,9 @@ export default function LoginPage() {
               </form>
               )}
 
-              {!sentTo && (
+              {!sentTo && !signup && (
                 <p className="mt-4 text-center text-xs font-mono text-stone-600">
-                  {signup ? 'Already have an account?' : 'New merchant?'}{' '}
-                  <button
-                    type="button"
-                    onClick={() => { setMode(signup ? 'login' : 'signup'); setError(null); setNeedsConfirm(false); }}
-                    className="underline font-bold text-[#B8251B] cursor-pointer"
-                  >
-                    {signup ? 'Log in' : 'Create an account'}
-                  </button>
-                  {signup ? '' : ' or connect with Instagram above.'}
+                  New here? Choose the <b>Sign up</b> tab above.
                 </p>
               )}
 
