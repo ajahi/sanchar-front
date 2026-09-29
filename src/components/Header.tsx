@@ -1,14 +1,13 @@
 import React from 'react';
 import { Sparkles, Settings, Database, Flame, User, LogOut, Menu, X } from 'lucide-react';
 import { MetaConnectionStatus, AuthUser } from '../types';
-import Link from 'next/link';
 import { SancharLogo } from './SancharLogo';
 import { ProfileModal } from './ProfileModal';
 
 interface HeaderProps {
   businessName: string;
   activeTab: 'inbox' | 'sandbox' | 'inventory' | 'settings' | 'dashboard';
-  setActiveTab: (tab: 'inbox' | 'sandbox' | 'inventory' | 'settings') => void;
+  setActiveTab: (tab: 'inbox' | 'dashboard' | 'sandbox' | 'inventory' | 'settings') => void;
   metaStatus: MetaConnectionStatus;
   unresolvedEscalationsCount: number;
   onOpenNewInboundModal: () => void;
@@ -88,17 +87,17 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </button>
 
-        <Link
-          id="nav-dashboard-link"
-          href="/dashboard"
-          className={`pill transition-all ${
+        <button
+          id="nav-dashboard-btn"
+          onClick={() => setActiveTab('dashboard')}
+          className={`pill transition-all cursor-pointer ${
             activeTab === 'dashboard'
               ? 'mustard-bg text-black shadow-[2px_2px_0px_#1A1A1A]'
               : 'aged-paper text-black opacity-90 hover:opacity-100'
           }`}
         >
           <span>DASHBOARD</span>
-        </Link>
+        </button>
 
         <button
           id="nav-sandbox-btn"

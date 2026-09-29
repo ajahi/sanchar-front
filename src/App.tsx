@@ -14,6 +14,7 @@ import { Header } from './components/Header';
 import { SidebarNav } from './components/SidebarNav';
 import { InboxFeed } from './components/InboxFeed';
 import { RightInspector } from './components/RightInspector';
+import { DashboardModal } from './components/DashboardModal';
 import { RAGSandboxModal } from './components/RAGSandboxModal';
 import { MetaSettingsModal } from './components/MetaSettingsModal';
 import { InventoryModal } from './components/InventoryModal';
@@ -34,7 +35,9 @@ export default function App() {
   // Navigation & Modals
   // Phones (< md) show one pane at a time, messenger-style: the chat list, or the open chat.
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'inbox' | 'sandbox' | 'inventory' | 'settings'>('inbox');
+  type Tab = 'inbox' | 'dashboard' | 'sandbox' | 'inventory' | 'settings';
+  const [activeTab, setActiveTab] = useState<Tab>('inbox');
+  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [isSandboxOpen, setIsSandboxOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isInventoryOpen, setIsInventoryOpen] = useState(false);
@@ -45,6 +48,7 @@ export default function App() {
   const [filterNeedsHumanOnly, setFilterNeedsHumanOnly] = useState(false);
 
   const handleSignOut = async () => {
+    sessionStorage.removeItem('ns_dashboard_seen'); // next login shows the dashboard again
     await logout();
     window.location.assign('/login');
   };
@@ -103,9 +107,10 @@ export default function App() {
   const unresolvedEscalationsCount = threads.filter((t) => t.status === 'NEEDS_HUMAN').length;
 
   // Handler for Header tab clicks
-  const handleTabChange = (tab: 'inbox' | 'sandbox' | 'inventory' | 'settings') => {
+  const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
-    if (tab === 'sandbox') setIsSandboxOpen(true);
+    if (tab === 'dashboard') setIsDashboardOpen(true);
+    else if (tab === 'sandbox') setIsSandboxOpen(true);
     else if (tab === 'inventory') setIsInventoryOpen(true);
     else if (tab === 'settings') setIsSettingsOpen(true);
   };
@@ -113,9 +118,11 @@ export default function App() {
   // Header tabs clicked on another page (e.g. /dashboard) arrive as /?tab=…; open that view once.
   useEffect(() => {
     const tab = new URLSearchParams(window.location.search).get('tab');
-    if (tab === 'sandbox' || tab === 'inventory' || tab === 'settings') handleTabChange(tab);
+    if (tab === 'dashboard' || tab === 'sandbox' || tab === 'inventory' || tab === 'settings') handleTabChange(tab);
     if (tab === 'inbound') setIsInboundModalOpen(true);
     if (tab) window.history.replaceState(null, '', '/');
+    // First load after login: greet with the dashboard, then the conversations.
+    else if (!sessionStorage.getItem('ns_dashboard_seen')) handleTabChange('dashboard');
   }, []);
 
   // Toggle Human takeover vs Auto-pilot
@@ -413,6 +420,15 @@ export default function App() {
       <Footer latencyMs={latencyMs} tokenUsage={tokenUsage} />
 
       {/* Modals */}
+      <DashboardModal
+        open={isDashboardOpen}
+        onClose={() => {
+          sessionStorage.setItem('ns_dashboard_seen', '1');
+          setIsDashboardOpen(false);
+          setActiveTab('inbox');
+        }}
+      />
+
       <RAGSandboxModal
         isOpen={isSandboxOpen}
         onClose={() => {
