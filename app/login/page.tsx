@@ -9,13 +9,19 @@ import {
 } from 'lucide-react';
 import { SancharLogo } from '../../src/components/SancharLogo';
 import { Loader } from '../../src/components/Loader';
-import { INSTAGRAM_LOGIN_URL, login } from '../../src/api';
+import { INSTAGRAM_LOGIN_URL, login, register, resendVerification } from '../../src/api';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [businessName, setBusinessName] = useState('');
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [sentTo, setSentTo] = useState<string | null>(null); // set once the confirmation email is out
+  const [needsConfirm, setNeedsConfirm] = useState(false); // login rejected: email not confirmed yet
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const signup = mode === 'signup';
 
   // Instagram callback failures come back as /login?ig_error=...&ig_error_description=...
   useEffect(() => {
@@ -32,12 +38,31 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setNeedsConfirm(false);
     try {
+      if (signup) {
+        await register({ name: name.trim(), business_name: businessName.trim(), email: email.trim(), password });
+        setSentTo(email.trim());
+        setIsLoading(false);
+        return;
+      }
       await login(email.trim(), password);
       window.location.assign('/'); // full load so middleware sees the new cookie
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      const msg = err instanceof Error ? err.message : 'Request failed';
+      setNeedsConfirm(msg.startsWith('Please confirm your email'));
+      setError(msg);
       setIsLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    try {
+      await resendVerification((sentTo ?? email).trim());
+      setError(null);
+      setSentTo((sentTo ?? email).trim());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not resend email');
     }
   };
 
@@ -207,7 +232,46 @@ export default function LoginPage() {
               </div>
 
               {/* Email Form */}
+              {sentTo ? (
+                <div className="space-y-3 font-mono text-sm">
+                  <p className="font-bold">Check your inbox</p>
+                  <p>We sent a confirmation link to <b>{sentTo}</b>. Open it to activate your account.</p>
+                  {error && <p role="alert" className="text-xs font-bold text-[#B8251B]">{error}</p>}
+                  <button type="button" onClick={handleResend} className="underline font-bold text-[#B8251B] cursor-pointer">
+                    Resend email
+                  </button>
+                  <div>
+                    <button type="button" onClick={() => { setSentTo(null); setMode('login'); }} className="underline cursor-pointer">
+                      Back to log in
+                    </button>
+                  </div>
+                </div>
+              ) : (
               <form onSubmit={handleEmailSubmit} className="space-y-3.5">
+                {signup && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-mono font-bold text-[#1A1A1A] uppercase mb-1">Your name *</label>
+                      <input
+                        id="input-name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 bg-white border-2 border-black font-mono text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#B8251B] shadow-[inset_1px_1px_2px_rgba(0,0,0,0.1)]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-mono font-bold text-[#1A1A1A] uppercase mb-1">Business name *</label>
+                      <input
+                        id="input-business"
+                        value={businessName}
+                        onChange={(e) => setBusinessName(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 bg-white border-2 border-black font-mono text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#B8251B] shadow-[inset_1px_1px_2px_rgba(0,0,0,0.1)]"
+                      />
+                    </div>
+                  </>
+                )}
                 <div>
                   <label className="block text-xs font-mono font-bold text-[#1A1A1A] uppercase mb-1">
                     Work email *
@@ -232,6 +296,8 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    minLength={signup ? 8 : undefined}
+                    autoComplete={signup ? 'new-password' : 'current-password'}
                     className="w-full px-3 py-2 bg-white border-2 border-black font-mono text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#B8251B] shadow-[inset_1px_1px_2px_rgba(0,0,0,0.1)]"
                   />
                 </div>
@@ -239,6 +305,11 @@ export default function LoginPage() {
                   <p role="alert" className="text-xs font-mono font-bold text-[#B8251B]">
                     {error}
                   </p>
+                )}
+                {needsConfirm && (
+                  <button type="button" onClick={handleResend} className="text-xs font-mono underline font-bold text-[#B8251B] cursor-pointer">
+                    Resend confirmation email
+                  </button>
                 )}
 
                 <p className="text-[10px] font-mono text-stone-600 leading-tight">
@@ -255,14 +326,25 @@ export default function LoginPage() {
                   disabled={isLoading}
                   className="w-full py-3 px-4 vermilion-bg hover:bg-[#961c13] active:translate-y-0.5 text-white font-serif font-black text-sm tracking-wider uppercase border-3 border-black flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[4px_4px_0px_#1A1A1A]"
                 >
-                  <span>{isLoading ? 'Igniting Workstation...' : 'Log in to Sanchar'}</span>
+                  <span>{isLoading ? 'Igniting Workstation...' : signup ? 'Create account' : 'Log in to Sanchar'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
+              )}
 
-              <p className="mt-4 text-center text-xs font-mono text-stone-600">
-                New merchant? Connect with Instagram above to create your workspace.
-              </p>
+              {!sentTo && (
+                <p className="mt-4 text-center text-xs font-mono text-stone-600">
+                  {signup ? 'Already have an account?' : 'New merchant?'}{' '}
+                  <button
+                    type="button"
+                    onClick={() => { setMode(signup ? 'login' : 'signup'); setError(null); setNeedsConfirm(false); }}
+                    className="underline font-bold text-[#B8251B] cursor-pointer"
+                  >
+                    {signup ? 'Log in' : 'Create an account'}
+                  </button>
+                  {signup ? '' : ' or connect with Instagram above.'}
+                </p>
+              )}
 
               {/* Authentic Tactile Strikepad Edge across the Base */}
               <div className="mt-5 pt-3 border-t-2 border-black">

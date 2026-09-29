@@ -10,6 +10,26 @@ export async function login(email: string, password: string): Promise<void> {
   if (!res.ok) throw new Error((await res.json().catch(() => null))?.detail ?? 'Login failed');
 }
 
+async function post(path: string, body: unknown, fallback: string): Promise<void> {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (res.ok) return;
+  const detail = (await res.json().catch(() => null))?.detail;
+  throw new Error(typeof detail === 'string' ? detail : fallback); // 422 detail is an array
+}
+
+export const register = (b: { name: string; business_name: string; email: string; password: string }) =>
+  post('/api/v1/auth/register', b, 'Sign up failed');
+
+export const resendVerification = (email: string) =>
+  post('/api/v1/auth/resend-verification', { email }, 'Could not resend email');
+
+// Sets the session cookie on success.
+export const verifyEmail = (token: string) => post('/api/v1/auth/verify-email', { token }, 'Confirmation failed');
+
 export async function logout(): Promise<void> {
   await fetch('/api/v1/auth/logout', { method: 'POST' });
 }
