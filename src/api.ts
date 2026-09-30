@@ -217,3 +217,39 @@ export async function sendReply(conversationId: string, text: string): Promise<C
   if (!res.ok) throw new Error((await res.json().catch(() => null))?.detail ?? 'Send failed');
   return toChatMessage(await res.json());
 }
+
+// ---- Shop context: what the auto-reply bot answers from (GET/PUT /api/v1/knowledge) ----
+export interface KnowledgeSection {
+  key: string;
+  label: string;
+  hint: string;
+  content: string;
+}
+
+export interface Knowledge {
+  sections: KnowledgeSection[];
+  ai_enabled: boolean;
+  max_chars: number;
+}
+
+async function asJson<T>(res: Response, fallback: string): Promise<T> {
+  if (res.ok) return res.json();
+  const detail = (await res.json().catch(() => null))?.detail;
+  throw new Error(typeof detail === 'string' ? detail : fallback);
+}
+
+const sendJson = (method: string, path: string, body: unknown) =>
+  fetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+export const getKnowledge = () => fetch('/api/v1/knowledge').then((r) => asJson<Knowledge>(r, 'Could not load shop info'));
+
+export const saveKnowledgeSection = (key: string, content: string) =>
+  sendJson('PUT', `/api/v1/knowledge/${key}`, { content }).then((r) => asJson<KnowledgeSection>(r, 'Save failed'));
+
+export const setAiEnabled = (enabled: boolean) =>
+  sendJson('PATCH', '/api/v1/tenants/me', { ai_auto_reply: enabled }).then((r) => asJson<unknown>(r, 'Could not change the AI setting'));
+
+export const testBot = (message: string) =>
+  sendJson('POST', '/api/v1/knowledge/test', { message }).then((r) =>
+    asJson<{ reply: string; handover: boolean; reason: string }>(r, 'Test failed')
+  );

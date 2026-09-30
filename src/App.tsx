@@ -2,14 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { 
   ConversationThread, 
   InventoryItem, 
-  FAQItem, 
   MetaConnectionStatus, 
   ChannelType, 
   ChatMessage,
   AuthUser,
 } from './types';
 import { askAi, getMyTenant, listConversations, listMessages, logout, sendReply } from './api';
-import { initialInventory, initialFAQs, initialMetaStatus } from './mockData';
+import { initialInventory, initialMetaStatus } from './mockData';
 import { Header } from './components/Header';
 import { SidebarNav } from './components/SidebarNav';
 import { InboxFeed } from './components/InboxFeed';
@@ -17,7 +16,7 @@ import { RightInspector } from './components/RightInspector';
 import { DashboardModal } from './components/DashboardModal';
 import { RAGSandboxModal } from './components/RAGSandboxModal';
 import { MetaSettingsModal } from './components/MetaSettingsModal';
-import { InventoryModal } from './components/InventoryModal';
+import { KnowledgeModal } from './components/KnowledgeModal';
 import { InboundSimulatorModal } from './components/InboundSimulatorModal';
 import { Footer } from './components/Footer';
 
@@ -30,8 +29,7 @@ export default function App() {
   const [threadsLoaded, setThreadsLoaded] = useState(false);
   const [loadingMessagesId, setLoadingMessagesId] = useState<string | null>(null);
   const loadedMessages = useRef(new Set<string>());
-  const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
-  const [faqs, setFaqs] = useState<FAQItem[]>(initialFAQs);
+  const [inventory] = useState<InventoryItem[]>(initialInventory); // ponytail: still mock, only feeds the right-hand inspector
   const [metaStatus, setMetaStatus] = useState<MetaConnectionStatus>(initialMetaStatus);
   const confidenceThreshold = 0.75; // escalate to a human below this AI confidence
 
@@ -340,19 +338,6 @@ export default function App() {
     }
   };
 
-  // Inventory handlers
-  const handleAddProduct = (item: InventoryItem) => {
-    setInventory((prev) => [item, ...prev]);
-  };
-
-  const handleDeleteProduct = (id: string) => {
-    setInventory((prev) => prev.filter((p) => p.id !== id));
-  };
-
-  const handleAddFAQ = (faq: FAQItem) => {
-    setFaqs((prev) => [...prev, faq]);
-  };
-
   return (
     <div
       id="app-root-container"
@@ -463,17 +448,12 @@ export default function App() {
         onChangeLanguage={(lang) => setDefaultLanguage(lang)}
       />
 
-      <InventoryModal
+      <KnowledgeModal
         isOpen={isInventoryOpen}
         onClose={() => {
           setIsInventoryOpen(false);
           setActiveTab('inbox');
         }}
-        inventory={inventory}
-        faqs={faqs}
-        onAddProduct={handleAddProduct}
-        onDeleteProduct={handleDeleteProduct}
-        onAddFAQ={handleAddFAQ}
       />
 
       <InboundSimulatorModal

@@ -122,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
           }`}
         >
           <Database className="w-3 h-3 text-[#1A2B4C]" />
-          <span>CATALOG</span>
+          <span>SHOP INFO</span>
         </button>
 
         <button
