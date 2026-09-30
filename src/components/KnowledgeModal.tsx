@@ -6,8 +6,6 @@ import { getKnowledge, saveKnowledgeSection, setAiEnabled, testBot, type Knowled
 import { Modal } from './Modal';
 import { Skeleton } from './Skeleton';
 
-type Reply = { reply: string; handover: boolean; reason: string };
-
 // The business owner's shop info: exactly what the auto-reply bot is allowed to tell customers.
 // Loads on open; Save writes only the sections that changed.
 export function KnowledgeModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -19,7 +17,7 @@ export function KnowledgeModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
   const [aiBusy, setAiBusy] = useState(false);
   const [question, setQuestion] = useState('');
   const [testing, setTesting] = useState(false);
-  const [answer, setAnswer] = useState<Reply | null>(null);
+  const [answer, setAnswer] = useState<string | null>(null);
 
   const load = () =>
     getKnowledge()
@@ -74,7 +72,7 @@ export function KnowledgeModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
   const ask = async () => {
     setTesting(true);
     setAnswer(null);
-    await run(async () => setAnswer(await testBot(question.trim())));
+    await run(async () => setAnswer((await testBot(question.trim())).reply));
     setTesting(false);
   };
 
@@ -101,8 +99,8 @@ export function KnowledgeModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
               <div>
                 <p className="font-black uppercase">AI auto-reply is {data.ai_enabled ? 'ON' : 'OFF'}</p>
                 <p className="text-[10px] text-stone-600">
-                  When on, Sanchar answers customers on your connected channels using only the info below, and passes
-                  anything it is unsure about to you.
+                  When on, Sanchar answers customers on your connected channels using only the info below. When you
+                  reply to a customer yourself, it stays quiet for 10 minutes, then takes over again.
                 </p>
               </div>
               <button
@@ -166,14 +164,7 @@ export function KnowledgeModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 </button>
               </div>
               {answer && (
-                <div className="p-2 border-2 border-black bg-[#FAF3E0] space-y-1">
-                  <p>{answer.reply}</p>
-                  {answer.handover && (
-                    <p className="text-[10px] font-bold text-[#B8251B]">
-                      ↪ Would be passed to you{answer.reason ? `: ${answer.reason}` : ''}
-                    </p>
-                  )}
-                </div>
+                <div className="p-2 border-2 border-black bg-[#FAF3E0] whitespace-pre-line">{answer}</div>
               )}
             </div>
           </>

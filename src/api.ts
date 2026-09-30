@@ -251,5 +251,5 @@ export const setAiEnabled = (enabled: boolean) =>
 
 export const testBot = (message: string) =>
   sendJson('POST', '/api/v1/knowledge/test', { message }).then((r) =>
-    asJson<{ reply: string; handover: boolean; reason: string }>(r, 'Test failed')
+    asJson<{ reply: string }>(r, 'Test failed')
   );
