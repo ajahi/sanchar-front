@@ -1,4 +1,4 @@
-import { askAi } from '../api';
+import { askAi, MEDIA_DRAG_TYPE, type ShopMedia } from '../api';
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ConversationThread, ChatMessage, ChannelType } from '../types';
@@ -58,7 +58,8 @@ const Attachment: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
 
 interface InboxFeedProps {
   thread: ConversationThread | null;
-  onSendMessage: (text: string, sender: 'human' | 'ai') => void;
+  onSendMessage: (text: string, sender: 'human' | 'ai') => void | Promise<void>;
+  onSendMedia: (mediaId: string) => Promise<void>;
   onToggleTakeover: (threadId: string) => void;
   onSimulateInboundCustomerMessage: (threadId: string, text: string) => void;
   confidenceThreshold: number;
@@ -81,11 +82,15 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
   loading,
   thread,
   onSendMessage,
+  onSendMedia,
   onToggleTakeover,
   onSimulateInboundCustomerMessage,
   confidenceThreshold,
 }) => {
   const [inputText, setInputText] = useState('');
+  const [attached, setAttached] = useState<ShopMedia[]>([]); // photos dropped here, sent with the next SEND
+  const [dragOver, setDragOver] = useState(false);
+  const [dropNote, setDropNote] = useState('');
   const [isGeneratingAiDraft, setIsGeneratingAiDraft] = useState(false);
   const [showSimulateDropdown, setShowSimulateDropdown] = useState(false);
   const [customSimulateText, setCustomSimulateText] = useState('');
@@ -115,10 +120,34 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
 
   const isEscalated = thread.status === 'NEEDS_HUMAN';
 
-  const handleSend = () => {
-    if (!inputText.trim()) return;
-    onSendMessage(inputText.trim(), 'human');
+  const handleSend = async () => {
+    const text = inputText.trim();
+    const photos = attached;
+    if (!text && photos.length === 0) return;
     setInputText('');
+    setAttached([]);
+    setDropNote('');
+    if (text) await onSendMessage(text, 'human'); // text first, then the photos, in order
+    for (const m of photos) await onSendMedia(m.id);
+  };
+
+  const isMediaDrag = (e: React.DragEvent) => e.dataTransfer.types.includes(MEDIA_DRAG_TYPE);
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (!isMediaDrag(e)) return;
+    e.preventDefault();
+    setDragOver(false);
+    if (thread.channel !== 'instagram') {
+      setDropNote('Sending photos works in Instagram chats only for now.');
+      return;
+    }
+    try {
+      const m = JSON.parse(e.dataTransfer.getData(MEDIA_DRAG_TYPE)) as ShopMedia;
+      setDropNote('');
+      setAttached((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+    } catch {
+      /* not one of ours */
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -161,7 +190,26 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
   ];
 
   return (
-    <section className="flex-1 flex flex-col border-r-4 border-black aged-paper h-full overflow-hidden select-none">
+    <section
+      className="relative flex-1 flex flex-col border-r-4 border-black aged-paper h-full overflow-hidden select-none"
+      onDragOver={(e) => {
+        if (!isMediaDrag(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        setDragOver(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragOver(false);
+      }}
+      onDrop={handleDrop}
+    >
+      {dragOver && (
+        <div className="absolute inset-0 z-40 bg-[#E09A25]/30 border-4 border-dashed border-[#B8251B] flex items-center justify-center pointer-events-none">
+          <span className="bg-white border-2 border-black px-4 py-2 font-mono text-xs font-bold uppercase">
+            Drop to attach to your reply
+          </span>
+        </div>
+      )}
       {/* Thread Header Bar */}
       <div className="p-3 border-b-2 border-black flex flex-wrap justify-between items-center bg-white/70 gap-2 shrink-0">
         <div className="flex items-center gap-2">
@@ -415,6 +463,24 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
 
       {/* Bottom Reply Box */}
       <div className="p-3 md:p-4 border-t-4 border-black bg-white flex flex-col gap-2 shrink-0">
+        {(attached.length > 0 || dropNote) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {attached.map((m) => (
+              <div key={m.id} className="relative w-14 h-14 border-2 border-black" title={m.title ?? 'photo'}>
+                <img src={m.url} alt={m.title ?? 'photo'} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setAttached((prev) => prev.filter((x) => x.id !== m.id))}
+                  className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-[#B8251B] text-white text-[10px] leading-none border border-black cursor-pointer"
+                  aria-label="Remove photo"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            {dropNote && <span className="text-[10px] font-mono text-[#B8251B]">{dropNote}</span>}
+          </div>
+        )}
         <div className="flex gap-2">
           <input
             id="operator-message-input"
@@ -444,7 +510,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
           <button
             id="send-operator-message-btn"
             onClick={handleSend}
-            disabled={!inputText.trim()}
+            disabled={!inputText.trim() && attached.length === 0}
             className="vermilion-bg text-white font-bold px-5 py-2 border-2 border-black shadow-[3px_3px_0px_black] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[2px] active:translate-y-[2px] cursor-pointer disabled:opacity-50 flex items-center gap-1.5 text-xs uppercase"
           >
             <span>SEND</span>

@@ -266,6 +266,9 @@ export interface ShopMedia {
   in_stock: boolean;
 }
 
+// dataTransfer type used when a Shop Photos thumbnail is dragged onto the reply box.
+export const MEDIA_DRAG_TYPE = 'application/x-sanchar-media';
+
 export const listShopMedia = () => fetch('/api/v1/shop-media').then((r) => asJson<ShopMedia[]>(r, 'Could not load images'));
 
 export const uploadShopMedia = (file: File, title: string) => {

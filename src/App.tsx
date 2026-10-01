@@ -7,7 +7,7 @@ import {
   ChatMessage,
   AuthUser,
 } from './types';
-import { askAi, getMyTenant, listConversations, listMessages, logout, sendReply } from './api';
+import { askAi, getMyTenant, listConversations, listMessages, logout, sendReply, sendShopMedia } from './api';
 import { initialInventory, initialMetaStatus } from './mockData';
 import { Header } from './components/Header';
 import { SidebarNav } from './components/SidebarNav';
@@ -191,6 +191,23 @@ export default function App() {
         return t;
       })
     );
+  };
+
+  // A shop photo that went out (panel Send button or a drop on the reply box) joins the open thread.
+  const appendSentMedia = (msg: ChatMessage) =>
+    setThreads((prev) =>
+      prev.map((t) =>
+        t.id === activeThread?.id ? { ...t, messages: [...t.messages, msg], lastSeen: 'Just now' } : t
+      )
+    );
+
+  const handleSendMedia = async (mediaId: string) => {
+    if (!activeThread) return;
+    try {
+      appendSentMedia(await sendShopMedia(activeThread.id, mediaId));
+    } catch (err) {
+      alert(`Photo not sent: ${(err as Error).message}`);
+    }
   };
 
   // Simulate customer inbound message in current thread
@@ -393,6 +410,7 @@ export default function App() {
               loading={!threadsLoaded || loadingMessagesId === activeThread?.id}
               thread={activeThread}
               onSendMessage={handleSendMessage}
+              onSendMedia={handleSendMedia}
               onToggleTakeover={handleToggleTakeover}
               onSimulateInboundCustomerMessage={handleSimulateInboundCustomerMessage}
               confidenceThreshold={confidenceThreshold}
@@ -409,13 +427,7 @@ export default function App() {
             onChangeLanguage={(lang) => setDefaultLanguage(lang)}
             onOpenSandbox={() => setIsSandboxOpen(true)}
             onOpenCatalog={() => setIsInventoryOpen(true)}
-            onMediaSent={(msg) =>
-              setThreads((prev) =>
-                prev.map((t) =>
-                  t.id === activeThread?.id ? { ...t, messages: [...t.messages, msg], lastSeen: 'Just now' } : t
-                )
-              )
-            }
+            onMediaSent={appendSentMedia}
           />
         </div>
       </main>

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ImagePlus, Send, Trash2 } from 'lucide-react';
 import type { ChatMessage, ConversationThread } from '../types';
 import {
+  MEDIA_DRAG_TYPE,
   ShopMedia,
   deleteShopMedia,
   listShopMedia,
@@ -89,11 +90,20 @@ export const ShopMediaPanel: React.FC<Props> = ({ activeThread, onSent }) => {
       <div className="grid grid-cols-3 gap-1.5">
         {items.map((m) => (
           <div key={m.id} className="border border-black bg-[#FAF3E0] flex flex-col">
-            <div className="relative aspect-square overflow-hidden">
+            <div
+              className="relative aspect-square overflow-hidden cursor-grab active:cursor-grabbing"
+              draggable
+              title="Drag into the reply box"
+              onDragStart={(e) => {
+                e.dataTransfer.setData(MEDIA_DRAG_TYPE, JSON.stringify(m));
+                e.dataTransfer.effectAllowed = 'copy';
+              }}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={m.url}
                 alt={m.title ?? 'shop photo'}
+                draggable={false}
                 referrerPolicy="no-referrer"
                 className={`w-full h-full object-cover ${m.in_stock ? '' : 'grayscale opacity-60'}`}
               />
