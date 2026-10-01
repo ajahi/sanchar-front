@@ -253,3 +253,38 @@ export const testBot = (message: string) =>
   sendJson('POST', '/api/v1/knowledge/test', { message }).then((r) =>
     asJson<{ reply: string }>(r, 'Test failed')
   );
+
+// ---- Shop media: Instagram posts + uploaded images admins can send, with a sold-out flag (/api/v1/shop-media) ----
+export interface ShopMedia {
+  id: string;
+  source: 'instagram' | 'upload';
+  url: string;
+  media_type: string; // IMAGE | CAROUSEL_ALBUM | VIDEO (a reel/video shows its thumbnail)
+  title: string | null;
+  caption: string | null;
+  permalink: string | null;
+  in_stock: boolean;
+}
+
+export const listShopMedia = () => fetch('/api/v1/shop-media').then((r) => asJson<ShopMedia[]>(r, 'Could not load images'));
+
+export const uploadShopMedia = (file: File, title: string) => {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('title', title);
+  return fetch('/api/v1/shop-media', { method: 'POST', body: form }).then((r) => asJson<ShopMedia>(r, 'Upload failed'));
+};
+
+export const updateShopMedia = (id: string, patch: { title?: string; in_stock?: boolean }) =>
+  sendJson('PATCH', `/api/v1/shop-media/${id}`, patch).then((r) => asJson<ShopMedia>(r, 'Update failed'));
+
+export const deleteShopMedia = async (id: string): Promise<void> => {
+  const res = await fetch(`/api/v1/shop-media/${id}`, { method: 'DELETE' });
+  if (!res.ok) await asJson<unknown>(res, 'Delete failed');
+};
+
+// Sends one shop image to the customer of this conversation (Instagram only for now).
+export const sendShopMedia = (conversationId: string, mediaId: string) =>
+  sendJson('POST', `/api/v1/conversations/${conversationId}/media`, { media_id: mediaId }).then(async (r) =>
+    toChatMessage(await asJson<MessageDto>(r, 'Could not send the image'))
+  );

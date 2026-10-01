@@ -409,6 +409,13 @@ export default function App() {
             onChangeLanguage={(lang) => setDefaultLanguage(lang)}
             onOpenSandbox={() => setIsSandboxOpen(true)}
             onOpenCatalog={() => setIsInventoryOpen(true)}
+            onMediaSent={(msg) =>
+              setThreads((prev) =>
+                prev.map((t) =>
+                  t.id === activeThread?.id ? { ...t, messages: [...t.messages, msg], lastSeen: 'Just now' } : t
+                )
+              )
+            }
           />
         </div>
       </main>

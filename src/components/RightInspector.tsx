@@ -1,5 +1,6 @@
 import React from 'react';
-import { ConversationThread, InventoryItem } from '../types';
+import { ChatMessage, ConversationThread, InventoryItem } from '../types';
+import { ShopMediaPanel } from './ShopMediaPanel';
 import { Sparkles, MapPin, Tag, Box, BookOpen, Globe } from 'lucide-react';
 
 interface RightInspectorProps {
@@ -9,6 +10,7 @@ interface RightInspectorProps {
   onChangeLanguage: (lang: 'nepali' | 'nepglish' | 'english') => void;
   onOpenSandbox: () => void;
   onOpenCatalog: () => void;
+  onMediaSent: (msg: ChatMessage) => void;
 }
 
 export const RightInspector: React.FC<RightInspectorProps> = ({
@@ -18,9 +20,12 @@ export const RightInspector: React.FC<RightInspectorProps> = ({
   onChangeLanguage,
   onOpenSandbox,
   onOpenCatalog,
+  onMediaSent,
 }) => {
   return (
     <aside className="border-l-4 border-black flex flex-col p-3 gap-3 bg-[#F0E4D4] overflow-y-auto select-none h-full">
+      <ShopMediaPanel activeThread={activeThread} onSent={onMediaSent} />
+
       {/* Live Context Card */}
       <div className="matchbox-border p-3 bg-white">
         <div className="flex items-center justify-between border-b-2 border-black pb-1.5 mb-2">
