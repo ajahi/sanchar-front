@@ -107,7 +107,22 @@ const toChatMessage = (m: MessageDto): ChatMessage => ({
   mediaUrl: m.media_url ?? undefined,
   mediaType: m.message_type,
   timestamp: fmtTime(m.created_at),
+  createdAt: m.created_at,
 });
+
+// Meta only lets a business reply within 24h of the customer's last message (Instagram, WhatsApp, Messenger).
+export const REPLY_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** Age of the customer's last message in ms; null when there is none (or it has no real timestamp). */
+export function customerMessageAgeMs(messages: ChatMessage[], now = Date.now()): number | null {
+  const last = [...messages].reverse().find((m) => m.sender === 'customer' && m.createdAt);
+  return last ? now - new Date(last.createdAt!).getTime() : null;
+}
+
+export function replyWindowClosed(messages: ChatMessage[], now = Date.now()): boolean {
+  const age = customerMessageAgeMs(messages, now);
+  return age !== null && age > REPLY_WINDOW_MS;
+}
 
 const toThread = (c: ConversationDto): ConversationThread => ({
   id: c.id,

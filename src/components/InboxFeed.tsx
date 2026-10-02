@@ -1,5 +1,5 @@
-import { askAi, MEDIA_DRAG_TYPE, type ShopMedia } from '../api';
-import React, { useRef, useState } from 'react';
+import { askAi, customerMessageAgeMs, MEDIA_DRAG_TYPE, replyWindowClosed, type ShopMedia } from '../api';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ConversationThread, ChatMessage, ChannelType } from '../types';
 import { Skeleton } from './Skeleton';
@@ -91,6 +91,11 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
   const [attached, setAttached] = useState<ShopMedia[]>([]); // photos dropped here, sent with the next SEND
   const [dragOver, setDragOver] = useState(false);
   const [dropNote, setDropNote] = useState('');
+  const [now, setNow] = useState(() => Date.now()); // ticks so the 24h warning appears while the chat stays open
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
   const [isGeneratingAiDraft, setIsGeneratingAiDraft] = useState(false);
   const [showSimulateDropdown, setShowSimulateDropdown] = useState(false);
   const [customSimulateText, setCustomSimulateText] = useState('');
@@ -119,11 +124,14 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
   }
 
   const isEscalated = thread.status === 'NEEDS_HUMAN';
+  const windowClosed = replyWindowClosed(thread.messages, now);
+  const ageHours = Math.floor((customerMessageAgeMs(thread.messages, now) ?? 0) / 3_600_000);
+  const ageLabel = ageHours >= 48 ? `${Math.floor(ageHours / 24)} days` : `${ageHours} hours`;
 
   const handleSend = async () => {
     const text = inputText.trim();
     const photos = attached;
-    if (!text && photos.length === 0) return;
+    if (windowClosed || (!text && photos.length === 0)) return;
     setInputText('');
     setAttached([]);
     setDropNote('');
@@ -137,6 +145,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
     if (!isMediaDrag(e)) return;
     e.preventDefault();
     setDragOver(false);
+    if (windowClosed) return;
     if (thread.channel !== 'instagram') {
       setDropNote('Sending photos works in Instagram chats only for now.');
       return;
@@ -193,7 +202,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
     <section
       className="relative flex-1 flex flex-col border-r-4 border-black aged-paper h-full overflow-hidden select-none"
       onDragOver={(e) => {
-        if (!isMediaDrag(e)) return;
+        if (!isMediaDrag(e) || windowClosed) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = 'copy';
         setDragOver(true);
@@ -350,6 +359,21 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
         </div>
       )}
 
+      {/* 24h reply window closed: Meta would reject the send, so the composer is disabled below */}
+      {windowClosed && (
+        <div
+          role="alert"
+          className="bg-amber-100 text-[#1A1A1A] px-3 py-2 border-b-2 border-black flex items-start gap-2 shrink-0"
+        >
+          <Clock className="w-4 h-4 mt-0.5 text-[#B8251B] shrink-0" />
+          <p className="text-[11px] font-mono leading-snug">
+            <span className="font-bold uppercase">Reply window closed.</span> This customer&apos;s last message was
+            over {ageLabel} ago, and {thread.channel === 'whatsapp' ? 'WhatsApp' : thread.channel === 'facebook' ? 'Messenger' : 'Instagram'} only
+            allows replies within 24 hours. You can reply again once they message you.
+          </p>
+        </div>
+      )}
+
       {/* Messages Scroll Area */}
       <div className="flex-1 p-4 md:p-6 flex flex-col gap-5 overflow-y-auto">
         {loading && thread.messages.length === 0 && <MessageSkeleton />}
@@ -486,20 +510,23 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
             id="operator-message-input"
             type="text"
             placeholder={
-              isEscalated
+              windowClosed
+                ? 'Reply window closed: wait for the customer to message again'
+                : isEscalated
                 ? 'Human operator: type response in Nepali, Nepglish, or English...'
                 : 'Send message to customer across ' + thread.channel.toUpperCase() + '...'
             }
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 border-2 border-black p-2.5 text-xs md:text-sm font-mono bg-[#FAF3E0]/30 focus:outline-none focus:bg-white focus:border-[#B8251B]"
+            disabled={windowClosed}
+            className="flex-1 border-2 border-black p-2.5 text-xs md:text-sm font-mono bg-[#FAF3E0]/30 focus:outline-none focus:bg-white focus:border-[#B8251B] disabled:opacity-50 disabled:cursor-not-allowed"
           />
 
           <button
             id="generate-ai-draft-btn"
             onClick={handleGenerateAiDraft}
-            disabled={isGeneratingAiDraft}
+            disabled={isGeneratingAiDraft || windowClosed}
             className="pill mustard-bg text-black hover:bg-amber-400 cursor-pointer disabled:opacity-50 px-3 hidden sm:flex items-center gap-1.5"
             title="Ask Gemini RAG engine to suggest a draft response"
           >
@@ -510,7 +537,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
           <button
             id="send-operator-message-btn"
             onClick={handleSend}
-            disabled={!inputText.trim() && attached.length === 0}
+            disabled={windowClosed || (!inputText.trim() && attached.length === 0)}
             className="vermilion-bg text-white font-bold px-5 py-2 border-2 border-black shadow-[3px_3px_0px_black] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[2px] active:translate-y-[2px] cursor-pointer disabled:opacity-50 flex items-center gap-1.5 text-xs uppercase"
           >
             <span>SEND</span>

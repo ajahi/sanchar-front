@@ -6,6 +6,7 @@ import {
   ShopMedia,
   deleteShopMedia,
   listShopMedia,
+  replyWindowClosed,
   sendShopMedia,
   updateShopMedia,
   uploadShopMedia,
@@ -64,7 +65,8 @@ export const ShopMediaPanel: React.FC<Props> = ({ activeThread, onSent }) => {
     run(m.id, async () => replace(await updateShopMedia(m.id, { title: title.trim() })));
   };
 
-  const canSend = !!activeThread && activeThread.channel === 'instagram';
+  const windowClosed = !!activeThread && replyWindowClosed(activeThread.messages);
+  const canSend = !!activeThread && activeThread.channel === 'instagram' && !windowClosed;
 
   return (
     <div className="matchbox-border p-3 bg-white">
@@ -141,7 +143,13 @@ export const ShopMediaPanel: React.FC<Props> = ({ activeThread, onSent }) => {
             <div className="flex border-t border-black/30 mt-0.5">
               <button
                 disabled={!canSend || busy === m.id}
-                title={canSend ? 'Send to this customer' : 'Open an Instagram chat to send'}
+                title={
+                  windowClosed
+                    ? 'Reply window closed (customer last wrote over 24h ago)'
+                    : canSend
+                    ? 'Send to this customer'
+                    : 'Open an Instagram chat to send'
+                }
                 onClick={() => run(m.id, async () => onSent(await sendShopMedia(activeThread!.id, m.id)))}
                 className="flex-1 py-0.5 flex justify-center bg-[#1A2B4C] text-white disabled:opacity-30 cursor-pointer"
               >
