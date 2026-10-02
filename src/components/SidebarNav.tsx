@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConversationThread, ChannelType } from '../types';
-import { MessageSquare, Instagram, Facebook, AlertTriangle, ShieldCheck, Filter } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { Skeleton } from './Skeleton';
 
 interface SidebarNavProps {
@@ -172,11 +172,12 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                 key={thread.id}
                 id={`thread-card-${thread.id}`}
                 onClick={() => onSelectThread(thread.id)}
-                className={`p-2.5 cursor-pointer border-2 border-black transition-all relative ${
-                  isSelected
-                    ? 'bg-white shadow-[4px_4px_0px_#1A1A1A] translate-x-0.5'
-                    : 'bg-[#FAF3E0] hover:bg-white shadow-[2px_2px_0px_#1A1A1A]'
-                } ${isEscalated ? 'border-[#B8251B] outline outline-1 outline-[#B8251B]' : ''}`}
+                title={isEscalated ? 'Needs a person: reply to clear this' : undefined}
+                className={`p-2.5 cursor-pointer border-2 bg-white transition-all relative ${
+                  isEscalated
+                    ? 'needs-attention-pulse border-[#B8251B]'
+                    : 'border-black shadow-[2px_2px_0px_#1A1A1A] hover:bg-[#FAF3E0]'
+                } ${isSelected ? 'translate-x-0.5' : ''}`}
               >
                 {/* Header of thread card */}
                 <div className="flex items-center justify-between mb-1 gap-1">
@@ -202,28 +203,10 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                 </div>
 
                 {/* Last message preview */}
-                <p className="text-[11px] text-[#1A1A1A] line-clamp-2 leading-tight italic bg-white/50 p-1 border border-black/20 mb-1.5">
+                <p className="text-[11px] text-[#1A1A1A] line-clamp-2 leading-tight italic bg-white/50 p-1 border border-black/20">
                   &ldquo;{lastMsg ? lastMsg.text : 'No messages yet'}&rdquo;
                 </p>
 
-                {/* Status Badges */}
-                <div className="flex items-center justify-between pt-1 border-t border-black/10">
-                  {isEscalated ? (
-                    <span className="text-[9px] font-black bg-[#B8251B] text-white px-1.5 py-0.5 border border-black flex items-center gap-1 animate-pulse">
-                      <AlertTriangle className="w-2.5 h-2.5" />
-                      NEEDS HUMAN
-                    </span>
-                  ) : (
-                    <span className="text-[9px] font-bold bg-emerald-800 text-white px-1.5 py-0.5 border border-black flex items-center gap-1">
-                      <ShieldCheck className="w-2.5 h-2.5" />
-                      AUTO-PILOT
-                    </span>
-                  )}
-
-                  <span className="text-[9px] font-mono font-bold bg-[#E09A25] text-black px-1 border border-black">
-                    CONF: {(thread.confidenceScore ?? 0).toFixed(2)}
-                  </span>
-                </div>
               </div>
             );
           })

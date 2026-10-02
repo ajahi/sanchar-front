@@ -41,6 +41,18 @@
   background-color: #B8251B;
 }
 
+/* A conversation waiting on a person: pulsing red border. Cleared (back to a plain white card) once someone replies. */
+@keyframes needs-attention-pulse {
+  0%, 100% { border-color: #B8251B; box-shadow: 0 0 0 0 rgba(184, 37, 27, 0.55); }
+  50% { border-color: #ff3b2f; box-shadow: 0 0 0 5px rgba(184, 37, 27, 0); }
+}
+.needs-attention-pulse {
+  animation: needs-attention-pulse 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .needs-attention-pulse { animation: none; box-shadow: 0 0 0 2px #B8251B; }
+}
+
 .mustard-bg {
   background-color: #E09A25;
 }

@@ -133,26 +133,6 @@ export default function App() {
     else if (!sessionStorage.getItem('ns_dashboard_seen')) handleTabChange('dashboard');
   }, []);
 
-  // Toggle Human takeover vs Auto-pilot
-  const handleToggleTakeover = (threadId: string) => {
-    setThreads((prev) =>
-      prev.map((t) => {
-        if (t.id === threadId) {
-          const nextStatus = t.status === 'NEEDS_HUMAN' ? 'AUTO_PILOT' : 'NEEDS_HUMAN';
-          return {
-            ...t,
-            status: nextStatus,
-            escalationReason:
-              nextStatus === 'NEEDS_HUMAN'
-                ? 'Manual operator takeover initiated by merchant'
-                : undefined,
-          };
-        }
-        return t;
-      })
-    );
-  };
-
   // Human operator sending message to active thread
   const handleSendMessage = async (text: string, sender: 'human' | 'ai') => {
     if (!activeThread) return;
@@ -411,7 +391,6 @@ export default function App() {
               thread={activeThread}
               onSendMessage={handleSendMessage}
               onSendMedia={handleSendMedia}
-              onToggleTakeover={handleToggleTakeover}
               onSimulateInboundCustomerMessage={handleSimulateInboundCustomerMessage}
               confidenceThreshold={confidenceThreshold}
             />

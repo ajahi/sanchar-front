@@ -3,19 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ConversationThread, ChatMessage, ChannelType } from '../types';
 import { Skeleton } from './Skeleton';
-import { 
-  Send, 
-  Sparkles, 
-  UserCheck, 
-  Bot, 
-  AlertTriangle, 
-  ShieldCheck, 
-  CheckCircle2, 
-  Clock, 
-  CornerDownRight,
-  Flame,
-  ArrowRight
-} from 'lucide-react';
+import { Send, Sparkles, UserCheck, Bot, Clock, Flame } from 'lucide-react';
 
 const box = 'block mt-2 max-h-64 max-w-full border-2 border-black';
 
@@ -60,7 +48,6 @@ interface InboxFeedProps {
   thread: ConversationThread | null;
   onSendMessage: (text: string, sender: 'human' | 'ai') => void | Promise<void>;
   onSendMedia: (mediaId: string) => Promise<void>;
-  onToggleTakeover: (threadId: string) => void;
   onSimulateInboundCustomerMessage: (threadId: string, text: string) => void;
   confidenceThreshold: number;
   loading: boolean; // conversations or the open thread's messages are still being fetched
@@ -83,7 +70,6 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
   thread,
   onSendMessage,
   onSendMedia,
-  onToggleTakeover,
   onSimulateInboundCustomerMessage,
   confidenceThreshold,
 }) => {
@@ -96,6 +82,18 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
     const t = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(t);
   }, []);
+  const windowClosed = thread ? replyWindowClosed(thread.messages, now) : false;
+  const [toastOpen, setToastOpen] = useState(false);
+  useEffect(() => {
+    // Toast on opening a thread whose reply window has closed; fades after 8s (the composer stays disabled).
+    if (!windowClosed) {
+      setToastOpen(false);
+      return;
+    }
+    setToastOpen(true);
+    const t = setTimeout(() => setToastOpen(false), 8000);
+    return () => clearTimeout(t);
+  }, [thread?.id, windowClosed]);
   const [isGeneratingAiDraft, setIsGeneratingAiDraft] = useState(false);
   const [showSimulateDropdown, setShowSimulateDropdown] = useState(false);
   const [customSimulateText, setCustomSimulateText] = useState('');
@@ -116,7 +114,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
           </div>
           <h2 className="serif-heading text-xl mb-2">No Thread Selected</h2>
           <p className="text-xs text-[#1A1A1A]/70 mb-4 font-mono">
-            Select a conversation from the left feed to view the live customer inquiry, AI confidence score, and omnichannel context.
+            Select a conversation from the left feed to view the live customer inquiry and omnichannel context.
           </p>
         </div>
       </section>
@@ -124,7 +122,6 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
   }
 
   const isEscalated = thread.status === 'NEEDS_HUMAN';
-  const windowClosed = replyWindowClosed(thread.messages, now);
   const ageHours = Math.floor((customerMessageAgeMs(thread.messages, now) ?? 0) / 3_600_000);
   const ageLabel = ageHours >= 48 ? `${Math.floor(ageHours / 24)} days` : `${ageHours} hours`;
 
@@ -245,34 +242,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
           </div>
         </div>
 
-        {/* Action Controls & Escalation State */}
         <div className="flex items-center gap-2">
-          {isEscalated ? (
-            <div className="flex items-center gap-1">
-              <span className="pill bg-red-800 text-white text-[9px] animate-pulse">
-                <AlertTriangle className="w-3 h-3" />
-                HUMAN TAKEOVER ACTIVE
-              </span>
-              <button
-                id="resolve-escalation-btn"
-                onClick={() => onToggleTakeover(thread.id)}
-                className="pill bg-emerald-700 text-white hover:bg-emerald-800 cursor-pointer text-[9px]"
-              >
-                <CheckCircle2 className="w-3 h-3" />
-                RESOLVE & RE-ENABLE AI
-              </button>
-            </div>
-          ) : (
-            <button
-              id="takeover-btn"
-              onClick={() => onToggleTakeover(thread.id)}
-              className="pill bg-[#1A1A1A] text-white hover:bg-[#B8251B] cursor-pointer text-[9px]"
-            >
-              <UserCheck className="w-3 h-3" />
-              TAKE OVER AS HUMAN
-            </button>
-          )}
-
           {/* Quick Simulation Dropdown */}
           <div className="relative">
             <button
@@ -339,38 +309,27 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
         </div>
       </div>
 
-      {/* Escalation Alert Banner */}
-      {isEscalated && (
-        <div className="bg-[#B8251B] text-white p-2.5 border-b-2 border-black flex items-center justify-between shrink-0 animate-pulse">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-amber-300" />
-            <div>
-              <p className="text-xs font-black uppercase tracking-wider font-serif">
-                ! ALERT: HUMAN ESCALATION REQUIRED !
-              </p>
-              <p className="text-[11px] font-mono text-amber-100">
-                {thread.escalationReason || 'Customer requested human manager or AI confidence fell below threshold.'}
-              </p>
-            </div>
-          </div>
-          <span className="pill bg-white text-black text-[9px] border-black">
-            HIGH PRIORITY
-          </span>
-        </div>
-      )}
-
-      {/* 24h reply window closed: Meta would reject the send, so the composer is disabled below */}
-      {windowClosed && (
+      <div className="relative flex-1 min-h-0 flex flex-col">
+      {/* 24h reply window closed: a toast over the messages (Meta would reject a send; the composer is disabled below) */}
+      {windowClosed && toastOpen && (
         <div
           role="alert"
-          className="bg-amber-100 text-[#1A1A1A] px-3 py-2 border-b-2 border-black flex items-start gap-2 shrink-0"
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-30 w-[min(32rem,calc(100%-2rem))] bg-amber-100 text-[#1A1A1A] px-3 py-2.5 border-2 border-black shadow-[4px_4px_0px_#1A1A1A] flex items-start gap-2"
         >
           <Clock className="w-4 h-4 mt-0.5 text-[#B8251B] shrink-0" />
-          <p className="text-[11px] font-mono leading-snug">
+          <p className="flex-1 text-[11px] font-mono leading-snug">
             <span className="font-bold uppercase">Reply window closed.</span> This customer&apos;s last message was
             over {ageLabel} ago, and {thread.channel === 'whatsapp' ? 'WhatsApp' : thread.channel === 'facebook' ? 'Messenger' : 'Instagram'} only
             allows replies within 24 hours. You can reply again once they message you.
           </p>
+          <button
+            type="button"
+            onClick={() => setToastOpen(false)}
+            aria-label="Dismiss"
+            className="text-sm leading-none font-bold cursor-pointer px-1"
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -399,7 +358,6 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
           }
 
           if (msg.sender === 'ai') {
-            const conf = msg.confidence ?? thread.confidenceScore;
             const source = msg.source ?? thread.ragSourceDoc;
 
             return (
@@ -421,9 +379,6 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
 
                 {/* Metadata badges for AI response */}
                 <div className="flex flex-wrap gap-1.5 mt-0.5">
-                  <span className="text-[9px] font-bold bg-green-800 text-white px-1.5 py-0.5 border border-black font-mono">
-                    CONFIDENCE: {(conf ?? 0).toFixed(2)}
-                  </span>
                   <span className="text-[9px] font-bold bg-[#1A2B4C] text-white px-1.5 py-0.5 border border-black font-mono">
                     SOURCE: {source}
                   </span>
@@ -433,13 +388,6 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
                     </span>
                   )}
                 </div>
-
-                {msg.needsHumanAlert && (
-                  <div className="mt-1 p-1.5 bg-red-800 text-white font-bold text-[10px] uppercase border-2 border-black flex items-center gap-1.5">
-                    <AlertTriangle className="w-3 h-3 text-amber-300" />
-                    ! ESCALATED TO HUMAN OPERATOR !
-                  </div>
-                )}
               </div>
             );
           }
@@ -467,6 +415,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
             </div>
           );
         })}
+      </div>
       </div>
 
       {/* Canned Quick Responses Bar */}

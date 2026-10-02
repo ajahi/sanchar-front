@@ -81,6 +81,7 @@ interface ConversationDto {
   channel: ChannelType;
   status: string;
   mode: string;
+  needs_attention: boolean; // an open handover to a person that nobody has answered yet
   last_message_at: string | null;
   customer_id: string;
   customer_name: string | null;
@@ -134,7 +135,7 @@ const toThread = (c: ConversationDto): ConversationThread => ({
     : c.customer_id,
   lastSeen: c.last_message_at ? fmtTime(c.last_message_at) : '',
   lastMessageAt: c.last_message_at ?? '',
-  status: c.mode === 'ai' ? 'AUTO_PILOT' : 'NEEDS_HUMAN',
+  status: c.needs_attention ? 'NEEDS_HUMAN' : 'AUTO_PILOT',
   messages: [],
 });
 
