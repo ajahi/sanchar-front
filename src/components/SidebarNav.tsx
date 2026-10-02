@@ -173,10 +173,10 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                 id={`thread-card-${thread.id}`}
                 onClick={() => onSelectThread(thread.id)}
                 title={isEscalated ? 'Needs a person: reply to clear this' : undefined}
-                className={`p-2.5 cursor-pointer border-2 bg-white transition-all relative ${
+                className={`cursor-pointer transition-all relative ${
                   isEscalated
-                    ? 'needs-attention-pulse border-[#B8251B]'
-                    : 'border-black shadow-[2px_2px_0px_#1A1A1A] hover:bg-[#FAF3E0]'
+                    ? 'needs-attention-pulse border-[5px] border-[#B8251B] p-[7px]' // thicker border, padding trimmed so the card keeps its size
+                    : 'p-2.5 border-2 bg-white border-black shadow-[2px_2px_0px_#1A1A1A] hover:bg-[#FAF3E0]'
                 } ${isSelected ? 'translate-x-0.5' : ''}`}
               >
                 {/* Header of thread card */}
