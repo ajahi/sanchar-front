@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Database, Send } from 'lucide-react';
-import { getKnowledge, saveKnowledgeSection, setAiEnabled, testBot, type Knowledge } from '../api';
+import { getKnowledge, saveKnowledgeSection, testBot, type Knowledge } from '../api';
 import { Modal } from './Modal';
 import { Skeleton } from './Skeleton';
 
@@ -14,7 +14,6 @@ export function KnowledgeModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [aiBusy, setAiBusy] = useState(false);
   const [question, setQuestion] = useState('');
   const [testing, setTesting] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
@@ -59,16 +58,6 @@ export function KnowledgeModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
     setSaving(false);
   };
 
-  const toggleAi = async () => {
-    if (!data) return;
-    setAiBusy(true);
-    await run(async () => {
-      await setAiEnabled(!data.ai_enabled);
-      setData({ ...data, ai_enabled: !data.ai_enabled });
-    });
-    setAiBusy(false);
-  };
-
   const ask = async () => {
     setTesting(true);
     setAnswer(null);
@@ -100,20 +89,12 @@ export function KnowledgeModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 <p className="font-black uppercase">AI auto-reply is {data.ai_enabled ? 'ON' : 'OFF'}</p>
                 <p className="text-[10px] text-stone-600">
                   When on, Sanchar answers customers on your connected channels using only the info below. When you
-                  reply to a customer yourself, it stays quiet for 10 minutes, then takes over again.
+                  reply to a customer yourself, it stays quiet for 10 minutes, then takes over again. Sanchar support switches this for you.
                 </p>
               </div>
-              <button
-                onClick={toggleAi}
-                disabled={aiBusy || (!data.ai_enabled && !hasSaved)}
-                title={!data.ai_enabled && !hasSaved ? 'Save some shop info first' : undefined}
-                aria-pressed={data.ai_enabled}
-                className={`pill shrink-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                  data.ai_enabled ? 'bg-emerald-800 text-white' : 'aged-paper text-black'
-                }`}
-              >
-                {data.ai_enabled ? 'Turn off' : 'Turn on'}
-              </button>
+              <span className={`pill shrink-0 ${data.ai_enabled ? 'bg-emerald-800 text-white' : 'aged-paper text-black'}`}>
+                {data.ai_enabled ? 'ON' : 'OFF'}
+              </span>
             </div>
 
             <p className="text-stone-700">

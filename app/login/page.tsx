@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { SancharLogo } from '../../src/components/SancharLogo';
 import { Loader } from '../../src/components/Loader';
-import { INSTAGRAM_LOGIN_URL, login, register, resendVerification } from '../../src/api';
+import { INSTAGRAM_LOGIN_URL, getMe, login, register, resendVerification } from '../../src/api';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -48,7 +48,8 @@ export default function LoginPage() {
         return;
       }
       await login(email.trim(), password);
-      window.location.assign('/'); // full load so middleware sees the new cookie
+      const isSuper = (await getMe().catch(() => null))?.roles.includes('super_admin');
+      window.location.assign(isSuper ? '/admin' : '/'); // full load so middleware sees the new cookie
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Request failed';
       setNeedsConfirm(msg.startsWith('Please confirm your email'));

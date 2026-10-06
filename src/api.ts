@@ -262,13 +262,35 @@ export const getKnowledge = () => fetch('/api/v1/knowledge').then((r) => asJson<
 export const saveKnowledgeSection = (key: string, content: string) =>
   sendJson('PUT', `/api/v1/knowledge/${key}`, { content }).then((r) => asJson<KnowledgeSection>(r, 'Save failed'));
 
-export const setAiEnabled = (enabled: boolean) =>
-  sendJson('PATCH', '/api/v1/tenants/me', { ai_auto_reply: enabled }).then((r) => asJson<unknown>(r, 'Could not change the AI setting'));
-
 export const testBot = (message: string) =>
   sendJson('POST', '/api/v1/knowledge/test', { message }).then((r) =>
     asJson<{ reply: string }>(r, 'Test failed')
   );
+
+// ---- Platform super admin (/api/v1/admin, role super_admin) ----
+export const getMe = () => fetch('/api/v1/auth/me').then((r) => asJson<{ name: string; roles: string[] }>(r, 'Not authenticated'));
+
+export interface AdminTenant {
+  id: string;
+  name: string;
+  owner_name: string | null;
+  status: string;
+  ai_auto_reply: boolean;
+  has_knowledge: boolean;
+  channels: string[];
+  customers: number;
+  conversations: number;
+  open_handovers: number;
+  messages: number;
+  ai_replies: number;
+  last_message_at: string | null;
+  created_at: string;
+}
+
+export const adminListTenants = () => fetch('/api/v1/admin/tenants').then((r) => asJson<AdminTenant[]>(r, 'Could not load tenants'));
+
+export const adminSetTenantAi = (id: string, enabled: boolean) =>
+  sendJson('PATCH', `/api/v1/admin/tenants/${id}/ai`, { enabled }).then((r) => asJson<unknown>(r, 'Could not change the AI setting'));
 
 // ---- Shop media: Instagram posts + uploaded images admins can send, with a sold-out flag (/api/v1/shop-media) ----
 export interface ShopMedia {

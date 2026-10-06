@@ -7,7 +7,7 @@ import {
   ChatMessage,
   AuthUser,
 } from './types';
-import { askAi, getMyTenant, listConversations, listMessages, logout, sendReply, sendShopMedia } from './api';
+import { askAi, getMe, getMyTenant, listConversations, listMessages, logout, sendReply, sendShopMedia } from './api';
 import { initialInventory, initialMetaStatus } from './mockData';
 import { Header } from './components/Header';
 import { SidebarNav } from './components/SidebarNav';
@@ -63,7 +63,8 @@ export default function App() {
         setCurrentUser({ id: t.id, email: '', businessName: t.name, ownerName: t.owner_name ?? t.name });
       })
       // Clear the cookie too, or middleware bounces /login straight back here (reload loop).
-      .catch(handleSignOut);
+      // A tenant-less super admin has no inbox: send them to /admin instead of signing out.
+      .catch(async () => ((await getMe().catch(() => null))?.roles.includes('super_admin') ? window.location.replace('/admin') : handleSignOut()));
   }, []);
 
   // Real inbox: conversations from the backend (fed by the Instagram webhook).
