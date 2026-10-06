@@ -282,6 +282,7 @@ export interface Staff {
   email: string;
   roles: string[];
   status: string;
+  verified: boolean;
 }
 
 export const listStaff = () => fetch('/api/v1/users').then((r) => asJson<Staff[]>(r, 'Could not load staff'));

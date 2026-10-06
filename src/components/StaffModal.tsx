@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Users } from 'lucide-react';
-import { addStaff, listStaff, setStaffStatus, type Staff } from '../api';
+import { addStaff, listStaff, resendVerification, setStaffStatus, type Staff } from '../api';
 import { Modal } from './Modal';
 
 const field = 'w-full p-2 border-2 border-black bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-[#B8251B]';
@@ -47,9 +47,14 @@ export function StaffModal({ open, onClose }: { open: boolean; onClose: () => vo
             return (
               <div key={s.id} className="flex items-center justify-between gap-2 py-1">
                 <div className="min-w-0">
-                  <p className="font-bold truncate">{s.name} <span className="font-normal text-stone-600">· {s.roles.join(', ')}</span></p>
+                  <p className="font-bold truncate">{s.name} <span className="font-normal text-stone-600">· {s.roles.join(', ')}{!s.verified && ' · invite pending'}</span></p>
                   <p className="text-[10px] text-stone-600 truncate">{s.email}</p>
                 </div>
+                {!s.verified && (
+                  <button className="pill aged-paper text-black cursor-pointer shrink-0" onClick={() => run(() => resendVerification(s.email))}>
+                    Resend invite
+                  </button>
+                )}
                 {!owner && (
                   <button
                     className="pill aged-paper text-black cursor-pointer shrink-0"
@@ -72,7 +77,7 @@ export function StaffModal({ open, onClose }: { open: boolean; onClose: () => vo
             <option value="agent">Agent — inbox only</option>
             <option value="admin">Admin — also shop info, channels, staff</option>
           </select>
-          <button className="pill mustard-bg text-black cursor-pointer sm:col-span-2 justify-center">Add</button>
+          <button className="pill mustard-bg text-black cursor-pointer sm:col-span-2 justify-center">Add &amp; send invite email</button>
         </form>
       </div>
     </Modal>
