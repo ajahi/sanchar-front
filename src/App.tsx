@@ -17,6 +17,7 @@ import { DashboardModal } from './components/DashboardModal';
 import { RAGSandboxModal } from './components/RAGSandboxModal';
 import { MetaSettingsModal } from './components/MetaSettingsModal';
 import { KnowledgeModal } from './components/KnowledgeModal';
+import { StaffModal } from './components/StaffModal';
 import { InboundSimulatorModal } from './components/InboundSimulatorModal';
 import { Footer } from './components/Footer';
 
@@ -43,6 +44,8 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isInventoryOpen, setIsInventoryOpen] = useState(false);
   const [isInboundModalOpen, setIsInboundModalOpen] = useState(false);
+  const [isStaffOpen, setIsStaffOpen] = useState(false);
+  const [canManage, setCanManage] = useState(false); // owner/admin; agents get a locked-down UI (backend enforces it too)
 
   // Filters
   const [selectedChannelFilter, setSelectedChannelFilter] = useState<'all' | ChannelType>('all');
@@ -57,10 +60,11 @@ export default function App() {
   // Who am I (the session cookie is httpOnly; the backend resolves it).
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   useEffect(() => {
-    getMyTenant()
-      .then((t) => {
+    Promise.all([getMyTenant(), getMe()])
+      .then(([t, me]) => {
         setBusinessName(t.name);
-        setCurrentUser({ id: t.id, email: '', businessName: t.name, ownerName: t.owner_name ?? t.name });
+        setCanManage(me.roles.some((r) => r === 'owner' || r === 'admin'));
+        setCurrentUser({ id: t.id, email: me.email, businessName: t.name, ownerName: me.name });
       })
       // Clear the cookie too, or middleware bounces /login straight back here (reload loop).
       // A tenant-less super admin has no inbox: send them to /admin instead of signing out.
@@ -356,6 +360,8 @@ export default function App() {
         onOpenNewInboundModal={() => setIsInboundModalOpen(true)}
         currentUser={currentUser}
         onSignOut={handleSignOut}
+        canManage={canManage}
+        onOpenStaff={() => setIsStaffOpen(true)}
       />
 
       {/* Main 12-Column High Density Workspace */}
@@ -454,6 +460,8 @@ export default function App() {
           setActiveTab('inbox');
         }}
       />
+
+      <StaffModal open={isStaffOpen} onClose={() => setIsStaffOpen(false)} />
 
       <InboundSimulatorModal
         isOpen={isInboundModalOpen}

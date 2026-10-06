@@ -87,6 +87,7 @@ export interface ChatMessage {
   source?: string;
   intent?: string;
   needsHumanAlert?: boolean;
+  senderName?: string; // staff member who sent a human reply
 }
 
 export interface ConversationThread {

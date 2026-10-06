@@ -14,6 +14,8 @@ interface HeaderProps {
   currentUser?: AuthUser | null;
   onOpenAuthPage?: () => void;
   onSignOut?: () => void;
+  canManage?: boolean; // owner/admin: shop info, channels, sandbox, staff. Agents get the inbox + dashboard only.
+  onOpenStaff?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,6 +27,8 @@ export const Header: React.FC<HeaderProps> = ({
   currentUser,
   onOpenAuthPage,
   onSignOut,
+  canManage = true,
+  onOpenStaff,
 }) => {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
@@ -99,6 +103,7 @@ export const Header: React.FC<HeaderProps> = ({
           <span>DASHBOARD</span>
         </button>
 
+        {canManage && (<>
         <button
           id="nav-sandbox-btn"
           onClick={() => setActiveTab('sandbox')}
@@ -138,6 +143,11 @@ export const Header: React.FC<HeaderProps> = ({
           <span>CHANNELS</span>
         </button>
 
+        <button id="nav-staff-btn" onClick={onOpenStaff} className="pill aged-paper text-black opacity-90 hover:opacity-100 cursor-pointer">
+          <span>STAFF</span>
+        </button>
+        </>)}
+
         {/* Quick inbound message simulation trigger */}
         <button
           id="trigger-inbound-btn"
@@ -156,7 +166,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-1">
             <button
               id="header-user-profile-btn"
-              onClick={() => setProfileOpen(true)}
+              onClick={() => canManage && setProfileOpen(true)}
               className="pill aged-paper hover:bg-[#FCEFD2] text-black font-mono cursor-pointer flex items-center gap-1.5 shadow-[1px_1px_0px_#1A1A1A]"
               title={`Logged in as ${currentUser.ownerName}. View the connected Instagram profile.`}
             >

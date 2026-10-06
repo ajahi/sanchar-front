@@ -399,7 +399,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
                 <span className="text-[9px] text-black/50 font-mono">{msg.timestamp}</span>
                 <span className="text-[10px] font-bold text-[#1A2B4C] uppercase tracking-wide font-mono flex items-center gap-1">
                   <UserCheck className="w-3 h-3 text-[#B8251B]" />
-                  Human Operator (Merchant)
+                  {msg.senderName ?? 'Human Operator (Merchant)'}
                 </span>
               </div>
               <div className="matchbox-border p-3.5 bg-white border-2 border-[#1A1A1A] relative text-left">

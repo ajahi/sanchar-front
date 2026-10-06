@@ -96,6 +96,7 @@ interface MessageDto {
   media_url: string | null;
   ai_generated: boolean;
   created_at: string;
+  sender_name: string | null;
 }
 
 const fmtTime = (iso: string) =>
@@ -109,6 +110,7 @@ const toChatMessage = (m: MessageDto): ChatMessage => ({
   mediaType: m.message_type,
   timestamp: fmtTime(m.created_at),
   createdAt: m.created_at,
+  senderName: m.sender_name ?? undefined,
 });
 
 // Meta only lets a business reply within 24h of the customer's last message (Instagram, WhatsApp, Messenger).
@@ -268,7 +270,27 @@ export const testBot = (message: string) =>
   );
 
 // ---- Platform super admin (/api/v1/admin, role super_admin) ----
-export const getMe = () => fetch('/api/v1/auth/me').then((r) => asJson<{ name: string; roles: string[] }>(r, 'Not authenticated'));
+export const getMe = () =>
+  fetch('/api/v1/auth/me').then((r) =>
+    asJson<{ name: string; email: string; roles: string[]; tenant_name: string | null }>(r, 'Not authenticated')
+  );
+
+// ---- Staff of the caller's tenant (/api/v1/users, owner/admin only) ----
+export interface Staff {
+  id: string;
+  name: string;
+  email: string;
+  roles: string[];
+  status: string;
+}
+
+export const listStaff = () => fetch('/api/v1/users').then((r) => asJson<Staff[]>(r, 'Could not load staff'));
+
+export const addStaff = (b: { name: string; email: string; password: string; role: 'admin' | 'agent' }) =>
+  sendJson('POST', '/api/v1/users', b).then((r) => asJson<Staff>(r, 'Could not add staff'));
+
+export const setStaffStatus = (id: string, status: 'active' | 'inactive') =>
+  sendJson('PATCH', `/api/v1/users/${id}`, { status }).then((r) => asJson<Staff>(r, 'Could not update staff'));
 
 export interface AdminTenant {
   id: string;
