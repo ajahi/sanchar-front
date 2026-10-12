@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Users } from 'lucide-react';
-import { addStaff, listStaff, resendVerification, setStaffStatus, type Staff } from '../api';
+import { addStaff, listStaff, removeStaff, resendVerification, setStaffStatus, type Staff } from '../api';
 import { Modal } from './Modal';
 
 const field = 'w-full p-2 border-2 border-black bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-[#B8251B]';
@@ -61,6 +61,14 @@ export function StaffModal({ open, onClose }: { open: boolean; onClose: () => vo
                     onClick={() => run(() => setStaffStatus(s.id, s.status === 'active' ? 'inactive' : 'active'))}
                   >
                     {s.status === 'active' ? 'Disable' : 'Enable'}
+                  </button>
+                )}
+                {!owner && (
+                  <button
+                    className="pill bg-[#B8251B] text-white cursor-pointer shrink-0"
+                    onClick={() => confirm(`Remove ${s.name}? They lose access immediately. Their past replies stay.`) && run(() => removeStaff(s.id))}
+                  >
+                    Remove
                   </button>
                 )}
               </div>

@@ -8,7 +8,7 @@ import {
   AuthUser,
 } from './types';
 import { askAi, getMe, getMyTenant, listConversations, listMessages, logout, sendReply, sendShopMedia } from './api';
-import { initialInventory, initialMetaStatus } from './mockData';
+import { initialInventory, initialMetaStatus, initialThreads } from './mockData';
 import { Header } from './components/Header';
 import { SidebarNav } from './components/SidebarNav';
 import { InboxFeed } from './components/InboxFeed';
@@ -21,13 +21,13 @@ import { StaffModal } from './components/StaffModal';
 import { InboundSimulatorModal } from './components/InboundSimulatorModal';
 import { Footer } from './components/Footer';
 
-export default function App() {
+export default function App({ publicMode = false }: { publicMode?: boolean }) {
   // Application State
   const [businessName, setBusinessName] = useState('Himalayan Silk & Handicrafts (काठमाडौँ)');
   const [defaultLanguage, setDefaultLanguage] = useState<'nepali' | 'nepglish' | 'english'>('nepglish');
-  const [threads, setThreads] = useState<ConversationThread[]>([]);
-  const [activeThreadId, setActiveThreadId] = useState<string>('');
-  const [threadsLoaded, setThreadsLoaded] = useState(false);
+  const [threads, setThreads] = useState<ConversationThread[]>(publicMode ? initialThreads : []);
+  const [activeThreadId, setActiveThreadId] = useState<string>(publicMode ? initialThreads[0].id : '');
+  const [threadsLoaded, setThreadsLoaded] = useState(publicMode);
   const [loadingMessagesId, setLoadingMessagesId] = useState<string | null>(null);
   const loadedMessages = useRef(new Set<string>());
   const [inventory] = useState<InventoryItem[]>(initialInventory); // ponytail: still mock, only feeds the right-hand inspector
@@ -68,13 +68,14 @@ export default function App() {
       })
       // Clear the cookie too, or middleware bounces /login straight back here (reload loop).
       // A tenant-less super admin has no inbox: send them to /admin instead of signing out.
-      .catch(async () => ((await getMe().catch(() => null))?.roles.includes('super_admin') ? window.location.replace('/admin') : handleSignOut()));
+      .catch(async () => publicMode ? undefined : ((await getMe().catch(() => null))?.roles.includes('super_admin') ? window.location.replace('/admin') : handleSignOut()));
   }, []);
 
   // Real inbox: conversations from the backend (fed by the Instagram webhook).
   // ponytail: 5s polling; swap for SSE/websocket when it matters. Loaded messages are kept
   // across polls so the open thread does not flicker.
   useEffect(() => {
+    if (publicMode) return; // demo data only
     let alive = true;
     const load = () =>
       listConversations()
@@ -99,7 +100,7 @@ export default function App() {
   const activeThreadLastSeen = threads.find((t) => t.id === activeThreadId)?.lastMessageAt;
   // Skeleton only the first time a thread opens; later refetches (polls) update in place.
   useEffect(() => {
-    if (!activeThreadId) return;
+    if (publicMode || !activeThreadId) return;
     if (!loadedMessages.current.has(activeThreadId)) setLoadingMessagesId(activeThreadId);
     listMessages(activeThreadId)
       .then((messages) =>
@@ -135,14 +136,14 @@ export default function App() {
     if (tab === 'inbound') setIsInboundModalOpen(true);
     if (tab) window.history.replaceState(null, '', '/');
     // First load after login: greet with the dashboard, then the conversations.
-    else if (!sessionStorage.getItem('ns_dashboard_seen')) handleTabChange('dashboard');
+    else if (!publicMode && !sessionStorage.getItem('ns_dashboard_seen')) handleTabChange('dashboard');
   }, []);
 
   // Human operator sending message to active thread
   const handleSendMessage = async (text: string, sender: 'human' | 'ai') => {
     if (!activeThread) return;
 
-    if (sender === 'human') {
+    if (sender === 'human' && !publicMode) {
       // Real send: backend posts the DM to Instagram and returns the stored message.
       try {
         const sent = await sendReply(activeThread.id, text);
@@ -384,7 +385,7 @@ export default function App() {
         </div>
 
         {/* Center Column: Omnichannel Live Feed & Operator Controls */}
-        <div className={`${mobileChatOpen ? 'flex' : 'hidden'} md:flex flex-col col-span-12 md:col-span-8 lg:col-span-6 xl:col-span-7 overflow-hidden h-full`}>
+        <div className={`${mobileChatOpen ? 'flex' : 'hidden'} md:flex flex-col col-span-12 md:col-span-8 ${publicMode ? 'lg:col-span-9 xl:col-span-10' : 'lg:col-span-6 xl:col-span-7'} overflow-hidden h-full`}>
           <button
             onClick={() => setMobileChatOpen(false)}
             className="md:hidden flex items-center gap-2 px-3 py-2 border-b-2 border-black aged-paper font-mono text-xs font-bold uppercase shrink-0"
@@ -405,7 +406,7 @@ export default function App() {
         </div>
 
         {/* Right Column: Live Context & Store Catalog Inspector */}
-        <div className="hidden lg:block lg:col-span-3 xl:col-span-3 overflow-hidden h-full">
+        <div className={`${publicMode ? 'hidden' : 'hidden lg:block'} lg:col-span-3 xl:col-span-3 overflow-hidden h-full`}>
           <RightInspector
             activeThread={activeThread}
             inventory={inventory}
@@ -419,7 +420,7 @@ export default function App() {
       </main>
 
       {/* High Density Status Footer */}
-      <Footer latencyMs={latencyMs} tokenUsage={tokenUsage} />
+      {!publicMode && <Footer latencyMs={latencyMs} tokenUsage={tokenUsage} />}
 
       {/* Modals */}
       <DashboardModal

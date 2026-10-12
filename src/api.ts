@@ -226,6 +226,37 @@ export async function linkWhatsApp(phoneNumberId: string, wabaId: string): Promi
   return res.json();
 }
 
+// ---- Connected Facebook Page(s) (GET /api/v1/social-accounts/facebook) ----
+// Also the Channels PING: live = token works, subscribed_fields has "messages" = Meta delivers webhooks.
+export interface FacebookPage {
+  page_id: string;
+  name: string | null;
+  subscribed_fields: string[] | null; // null = unknown (Meta didn't answer)
+  last_webhook_at: string | null;
+  connected_at: string;
+  live: boolean; // false: Meta didn't answer, only stored values are filled
+}
+
+export async function getFacebookPages(): Promise<FacebookPage[]> {
+  const res = await fetch('/api/v1/social-accounts/facebook');
+  if (!res.ok) throw new Error(`Failed to load Facebook status (${res.status})`);
+  return res.json();
+}
+
+// Channels → Connect: link a Page by its id + a Page access token (never a user token).
+export async function linkFacebook(pageId: string, pageAccessToken: string): Promise<FacebookPage> {
+  const res = await fetch('/api/v1/social-accounts/facebook', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ page_id: pageId, page_access_token: pageAccessToken }),
+  });
+  if (!res.ok) {
+    const detail = (await res.json().catch(() => null))?.detail;
+    throw new Error(typeof detail === 'string' ? detail : 'The Page id must be a number and the token a Page access token.');
+  }
+  return res.json();
+}
+
 export async function sendReply(conversationId: string, text: string): Promise<ChatMessage> {
   const res = await fetch(`/api/v1/conversations/${conversationId}/messages`, {
     method: 'POST',
@@ -289,6 +320,11 @@ export const listStaff = () => fetch('/api/v1/users').then((r) => asJson<Staff[]
 
 export const addStaff = (b: { name: string; email: string; password: string; role: 'admin' | 'agent' }) =>
   sendJson('POST', '/api/v1/users', b).then((r) => asJson<Staff>(r, 'Could not add staff'));
+
+export const removeStaff = (id: string) =>
+  fetch(`/api/v1/users/${id}`, { method: 'DELETE' }).then(async (r) => {
+    if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail ?? 'Could not remove staff');
+  });
 
 export const setStaffStatus = (id: string, status: 'active' | 'inactive') =>
   sendJson('PATCH', `/api/v1/users/${id}`, { status }).then((r) => asJson<Staff>(r, 'Could not update staff'));

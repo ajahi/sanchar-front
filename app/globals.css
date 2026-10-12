@@ -231,3 +231,68 @@ dialog.modal[open]::backdrop {
     transition: none;
   }
 }
+
+/* ---- /new-theme: flat, configurable theme (scoped; vars set by ThemeScope) ---- */
+.theme-clean {
+  background: var(--t-bg);
+  color: var(--t-text);
+  font-family: var(--t-font);
+  font-size: var(--t-size);
+}
+.theme-clean * { font-family: inherit; }
+.theme-clean .matchbox-border,
+.theme-clean .matchbox-border-sm,
+.theme-clean .matchbox-card,
+.theme-clean .matchbox-card-vermilion {
+  border: 1px solid var(--t-border) !important;
+  box-shadow: none !important;
+  border-radius: var(--t-radius);
+  background: var(--t-surface);
+  color: var(--t-text);
+}
+.theme-clean .matchbox-button-primary,
+.theme-clean .matchbox-button-ochre {
+  background: var(--t-accent) !important;
+  color: #fff !important;
+  border: 1px solid var(--t-accent) !important;
+  box-shadow: none !important;
+  border-radius: var(--t-radius);
+  transform: none !important;
+}
+.theme-clean .matchbox-button-secondary {
+  background: transparent !important;
+  color: var(--t-text) !important;
+  border: 1px solid var(--t-border) !important;
+  box-shadow: none !important;
+  border-radius: var(--t-radius);
+  transform: none !important;
+}
+.theme-clean .aged-paper,
+.theme-clean .halftone-tint,
+.theme-clean .strikepad-edge,
+.theme-clean .litho-stamp-border {
+  background-image: none !important;
+  background-color: var(--t-surface);
+  border-image: none;
+  box-shadow: none !important;
+}
+.theme-clean .serif-heading,
+.theme-clean .font-display-blocky,
+.theme-clean .font-mono-retro {
+  font-family: var(--t-font) !important;
+  text-shadow: none;
+  letter-spacing: normal;
+}
+.theme-clean [class*="shadow-["] { box-shadow: none !important; }
+.theme-clean [class*="border-[#1A1A1A]"],
+.theme-clean [class*="border-[3px]"],
+.theme-clean [class*="border-4"] { border-color: var(--t-border) !important; border-width: 1px !important; }
+.theme-clean [class*="bg-[#FAF3E0]"] { background-color: var(--t-surface) !important; }
+.theme-clean [class*="text-[#1A1A1A]"] { color: var(--t-text) !important; }
+/* simpler look: plain text, no shouty caps/tracking/bold-everything */
+.theme-clean .uppercase { text-transform: none !important; }
+.theme-clean [class*="tracking-"] { letter-spacing: normal !important; }
+.theme-clean .font-black, .theme-clean .font-extrabold, .theme-clean .font-bold { font-weight: 600; }
+.theme-clean [class*="border-b-2"], .theme-clean [class*="border-r-2"], .theme-clean [class*="border-l-2"],
+.theme-clean [class*="border-t-2"], .theme-clean [class*="border-2"] { border-width: 1px !important; border-color: var(--t-border) !important; }
+.theme-clean .border-black { border-color: var(--t-border) !important; }

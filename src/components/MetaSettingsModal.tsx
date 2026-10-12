@@ -3,7 +3,14 @@ import { Settings, Check, Globe, RefreshCw, Shield, Key, Link2, Smartphone } fro
 import { Modal } from './Modal';
 import { Skeleton } from './Skeleton';
 import { MetaConnectionStatus } from '../types';
-import { getWhatsAppAccounts, linkWhatsApp, WhatsAppAccount } from '../api';
+import {
+  FacebookPage,
+  getFacebookPages,
+  getWhatsAppAccounts,
+  linkFacebook,
+  linkWhatsApp,
+  WhatsAppAccount,
+} from '../api';
 
 // Tenants share their WhatsApp account with this business (Hachuwa market) as a partner.
 const SANCHAR_PARTNER_BUSINESS_ID = '3977606022464196';
@@ -38,6 +45,28 @@ const waChecks = (a: WhatsAppAccount) => [
     ok: !!a.last_webhook_at,
     label: 'Last webhook received',
     detail: a.last_webhook_at ? ago(a.last_webhook_at) : 'never',
+  },
+];
+
+// Same three checks for a Messenger Page: token works, Meta will deliver "messages", Meta did.
+const fbChecks = (p: FacebookPage) => [
+  {
+    ok: p.live,
+    label: 'Page & token',
+    detail: p.live ? 'token accepted by Meta' : "Meta didn't answer (token revoked?)",
+  },
+  {
+    ok: !!p.subscribed_fields?.includes('messages'),
+    label: 'Webhook subscription',
+    detail:
+      p.subscribed_fields === null
+        ? 'unknown'
+        : p.subscribed_fields.join(', ') || 'no fields subscribed — Meta will not deliver',
+  },
+  {
+    ok: !!p.last_webhook_at,
+    label: 'Last webhook received',
+    detail: p.last_webhook_at ? ago(p.last_webhook_at) : 'never',
   },
 ];
 
@@ -78,8 +107,41 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
       .finally(() => setWaPinging(false));
   };
 
+  const [fbPages, setFbPages] = useState<FacebookPage[] | null>(null);
+  const [fbError, setFbError] = useState<string | null>(null);
+  const [fbPinging, setFbPinging] = useState(false);
+  const [fbPageId, setFbPageId] = useState('');
+  const [fbToken, setFbToken] = useState('');
+  const [fbLinking, setFbLinking] = useState(false);
+  const [fbLinkError, setFbLinkError] = useState<string | null>(null);
+
+  const loadFacebook = () => {
+    setFbPinging(true);
+    setFbError(null);
+    getFacebookPages()
+      .then(setFbPages)
+      .catch((e) => setFbError(e.message))
+      .finally(() => setFbPinging(false));
+  };
+
+  const handleFbLink = () => {
+    setFbLinking(true);
+    setFbLinkError(null);
+    linkFacebook(fbPageId.trim(), fbToken.trim())
+      .then(() => {
+        setFbPageId('');
+        setFbToken('');
+        loadFacebook();
+      })
+      .catch((e) => setFbLinkError(e.message))
+      .finally(() => setFbLinking(false));
+  };
+
   useEffect(() => {
-    if (isOpen) loadWhatsApp();
+    if (isOpen) {
+      loadWhatsApp();
+      loadFacebook();
+    }
   }, [isOpen]);
 
   const [linkPhoneId, setLinkPhoneId] = useState('');
@@ -101,6 +163,7 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
   };
 
   const waAllOk = !!waAccounts?.length && waAccounts.every((a) => waChecks(a).every((c) => c.ok));
+  const fbAllOk = !!fbPages?.length && fbPages.every((p) => fbChecks(p).every((c) => c.ok));
 
   const handleTestPing = () => {
     setIsTestingWebhook(true);
@@ -167,20 +230,99 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
                   Facebook Messenger Integration
                 </h3>
               </div>
-              <span className="pill bg-emerald-800 text-white text-[8px]">
-                ● LINKED &amp; ACTIVE
-              </span>
+              <div className="flex items-center gap-2">
+                {fbPages?.length ? (
+                  <span className={`pill text-white text-[8px] ${fbAllOk ? 'bg-emerald-800' : 'bg-amber-700'}`}>
+                    {fbAllOk ? '● PAGE CONNECTED' : '● CHECK STATUS'}
+                  </span>
+                ) : (
+                  fbPages && <span className="pill bg-black/40 text-white text-[8px]">○ NOT CONNECTED</span>
+                )}
+                <button
+                  onClick={loadFacebook}
+                  disabled={fbPinging}
+                  className="pill bg-[#1A1A1A] text-white hover:bg-black cursor-pointer text-[9px]"
+                >
+                  {fbPinging ? <RefreshCw className="w-3 h-3 animate-spin" /> : 'PING'}
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
-              <div>
-                <span className="opacity-70 text-[9px] block">CONNECTED PAGE:</span>
-                <span className="font-bold">{metaStatus.facebook.pageName}</span>
-              </div>
-              <div>
-                <span className="opacity-70 text-[9px] block">PAGE ID:</span>
-                <span className="font-mono">{metaStatus.facebook.pageId}</span>
-              </div>
+            <div className="space-y-3 text-[11px]">
+              {fbError && (
+                <div className="p-2 bg-red-100 border border-red-700 text-red-900 text-[10px]">{fbError}</div>
+              )}
+              {fbPages === null && !fbError && (
+                <div role="status" aria-label="Loading Facebook status" className="space-y-2">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-3 w-full" />
+                </div>
+              )}
+              {fbPages?.length === 0 && (
+                <div className="space-y-2">
+                  <div className="opacity-70">No Facebook Page is linked to this workspace yet.</div>
+                  <div className="text-[10px]">
+                    Paste the Page ID and a <b>Page access token</b> (Graph API Explorer → <code>GET /me/accounts</code>;
+                    needs <code>pages_messaging</code>, <code>pages_manage_metadata</code>).
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <label className="block">
+                      <span className="opacity-70 text-[9px] block">PAGE ID:</span>
+                      <input
+                        value={fbPageId}
+                        onChange={(e) => setFbPageId(e.target.value)}
+                        inputMode="numeric"
+                        placeholder="e.g. 620492727822627"
+                        className="w-full p-1 border border-black bg-[#FAF3E0]/30 font-mono text-[10px]"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="opacity-70 text-[9px] block">PAGE ACCESS TOKEN:</span>
+                      <input
+                        type="password"
+                        autoComplete="off"
+                        value={fbToken}
+                        onChange={(e) => setFbToken(e.target.value)}
+                        className="w-full p-1 border border-black bg-[#FAF3E0]/30 font-mono text-[10px]"
+                      />
+                    </label>
+                  </div>
+                  {fbLinkError && (
+                    <div className="p-2 bg-red-100 border border-red-700 text-red-900 text-[10px]">
+                      {fbLinkError}
+                    </div>
+                  )}
+                  <button
+                    onClick={handleFbLink}
+                    disabled={fbLinking || !fbPageId.trim() || !fbToken.trim()}
+                    className="pill bg-emerald-800 text-white hover:bg-emerald-900 cursor-pointer disabled:opacity-50 text-[9px]"
+                  >
+                    {fbLinking ? 'LINKING…' : 'CONNECT FACEBOOK PAGE'}
+                  </button>
+                </div>
+              )}
+              {fbPages?.map((p) => (
+                <div key={p.page_id} className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="opacity-70 text-[9px] block">CONNECTED PAGE:</span>
+                      <span className="font-bold">{p.name ?? '—'}</span>
+                    </div>
+                    <div>
+                      <span className="opacity-70 text-[9px] block">PAGE ID:</span>
+                      <span className="font-mono">{p.page_id}</span>
+                    </div>
+                  </div>
+                  <div className="p-2 bg-[#FAF3E0]/40 border border-black text-[10px] space-y-0.5">
+                    {fbChecks(p).map((c) => (
+                      <div key={c.label}>
+                        <span className={c.ok ? 'text-emerald-800' : 'text-[#B8251B]'}>{c.ok ? '✓' : '✗'}</span>{' '}
+                        <span className="font-bold">{c.label}:</span> {c.detail}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
