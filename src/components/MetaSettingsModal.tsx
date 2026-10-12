@@ -6,7 +6,11 @@ import { MetaConnectionStatus } from '../types';
 import {
   FacebookPage,
   getFacebookPages,
+  getInstagramProfiles,
+  FACEBOOK_LOGIN_URL,
   getWhatsAppAccounts,
+  INSTAGRAM_LOGIN_URL,
+  InstagramProfile,
   linkFacebook,
   linkWhatsApp,
   WhatsAppAccount,
@@ -107,6 +111,9 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
       .finally(() => setWaPinging(false));
   };
 
+  const [igProfiles, setIgProfiles] = useState<InstagramProfile[] | null>(null);
+  const [igError, setIgError] = useState<string | null>(null);
+
   const [fbPages, setFbPages] = useState<FacebookPage[] | null>(null);
   const [fbError, setFbError] = useState<string | null>(null);
   const [fbPinging, setFbPinging] = useState(false);
@@ -141,6 +148,8 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
     if (isOpen) {
       loadWhatsApp();
       loadFacebook();
+      setIgError(null);
+      getInstagramProfiles().then(setIgProfiles).catch((e) => setIgError(e.message));
     }
   }, [isOpen]);
 
@@ -261,9 +270,16 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
               {fbPages?.length === 0 && (
                 <div className="space-y-2">
                   <div className="opacity-70">No Facebook Page is linked to this workspace yet.</div>
-                  <div className="text-[10px]">
-                    Paste the Page ID and a <b>Page access token</b> (Graph API Explorer → <code>GET /me/accounts</code>;
-                    needs <code>pages_messaging</code>, <code>pages_manage_metadata</code>).
+                  <a
+                    href={FACEBOOK_LOGIN_URL}
+                    className="pill bg-[#1A2B4C] text-white hover:opacity-90 cursor-pointer text-[9px] inline-block"
+                  >
+                    CONNECT FACEBOOK
+                  </a>
+                  <div className="text-[10px] opacity-70 pt-1">
+                    Or link a Page by hand: paste the Page ID and a <b>Page access token</b> (Graph API Explorer →{' '}
+                    <code>GET /me/accounts</code>; needs <code>pages_messaging</code>,{' '}
+                    <code>pages_manage_metadata</code>).
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <label className="block">
@@ -337,20 +353,53 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
                   Instagram Direct Messaging
                 </h3>
               </div>
-              <span className="pill bg-emerald-800 text-white text-[8px]">
-                ● VERIFIED
-              </span>
+              {igProfiles?.length ? (
+                <span className={`pill text-white text-[8px] ${igProfiles.every((a) => a.live) ? 'bg-emerald-800' : 'bg-amber-700'}`}>
+                  {igProfiles.every((a) => a.live) ? '● CONNECTED' : '● CHECK STATUS'}
+                </span>
+              ) : (
+                igProfiles && <span className="pill bg-black/40 text-white text-[8px]">○ NOT CONNECTED</span>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
-              <div>
-                <span className="opacity-70 text-[9px] block">PROFESSIONAL ACCOUNT:</span>
-                <span className="font-bold">{metaStatus.instagram.handle}</span>
-              </div>
-              <div>
-                <span className="opacity-70 text-[9px] block">INSTAGRAM ACCOUNT ID:</span>
-                <span className="font-mono">{metaStatus.instagram.accountId}</span>
-              </div>
+            <div className="space-y-3 text-[11px]">
+              {igError && (
+                <div className="p-2 bg-red-100 border border-red-700 text-red-900 text-[10px]">{igError}</div>
+              )}
+              {igProfiles === null && !igError && (
+                <div role="status" aria-label="Loading Instagram status" className="space-y-2">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-3 w-full" />
+                </div>
+              )}
+              {igProfiles?.length === 0 && (
+                <div className="space-y-2">
+                  <div className="opacity-70">No Instagram account is linked to this workspace yet.</div>
+                  <a
+                    href={INSTAGRAM_LOGIN_URL}
+                    className="pill bg-[#B8251B] text-white hover:opacity-90 cursor-pointer text-[9px] inline-block"
+                  >
+                    CONNECT INSTAGRAM
+                  </a>
+                </div>
+              )}
+              {igProfiles?.map((a) => (
+                <div key={a.id} className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="opacity-70 text-[9px] block">PROFESSIONAL ACCOUNT:</span>
+                    <span className="font-bold">{a.username ? `@${a.username}` : '—'}</span>
+                  </div>
+                  <div>
+                    <span className="opacity-70 text-[9px] block">INSTAGRAM ACCOUNT ID:</span>
+                    <span className="font-mono">{a.id}</span>
+                  </div>
+                  {!a.live && (
+                    <div className="col-span-2 text-[10px] text-[#B8251B]">
+                      Instagram didn't answer (token expired?). Reconnect to refresh it.
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 

@@ -47,6 +47,7 @@ export async function getMyTenant(): Promise<Tenant> {
 }
 
 export const INSTAGRAM_LOGIN_URL = '/api/v1/social-accounts/instagram/login';
+export const FACEBOOK_LOGIN_URL = '/api/v1/social-accounts/facebook/login';
 
 export interface AiReply {
   answer: string;
