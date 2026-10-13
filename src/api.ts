@@ -144,6 +144,15 @@ const toThread = (c: ConversationDto): ConversationThread => ({
   messages: [],
 });
 
+// "Load older chats": the backend pulls older Instagram/Messenger threads from Meta in the background
+// (50 per click, continuing where the last click stopped); the inbox poll shows them as they arrive.
+export async function syncHistory(): Promise<{ started: number; already_running: number }> {
+  const res = await fetch('/api/v1/conversations/sync-history', { method: 'POST' });
+  if (res.status === 403) throw new Error('Only owners and admins can load older chats.');
+  if (!res.ok) throw new Error(`Could not start loading older chats (${res.status})`);
+  return res.json();
+}
+
 export async function listConversations(): Promise<ConversationThread[]> {
   const res = await fetch('/api/v1/conversations');
   if (!res.ok) throw new Error('Failed to load conversations');

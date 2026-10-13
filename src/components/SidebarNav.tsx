@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ConversationThread, ChannelType } from '../types';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, History } from 'lucide-react';
+import { syncHistory } from '../api';
 import { Skeleton } from './Skeleton';
 
 interface SidebarNavProps {
@@ -24,6 +25,24 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
   filterNeedsHumanOnly,
   onToggleNeedsHumanFilter,
 }) => {
+  const [sync, setSync] = useState({ busy: false, note: '' });
+  const loadOlder = () => {
+    setSync({ busy: true, note: '' });
+    syncHistory()
+      .then((r) =>
+        r.started
+          ? 'Fetching older chats from Meta… they appear below as they arrive.'
+          : r.already_running
+            ? 'Already fetching older chats…'
+            : 'No Instagram or Messenger account is connected.'
+      )
+      .catch((e: Error) => e.message)
+      .then((note) => {
+        setSync({ busy: false, note });
+        setTimeout(() => setSync((s) => ({ ...s, note: '' })), 8000);
+      });
+  };
+
   // Filter threads
   const filteredThreads = threads.filter((t) => {
     if (selectedChannelFilter !== 'all' && t.channel !== selectedChannelFilter) {
@@ -136,6 +155,23 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
             {threads.filter((t) => t.status === 'NEEDS_HUMAN').length}
           </span>
         </button>
+
+        {/* Pull older chats from Meta (Instagram + Messenger), 50 per click */}
+        <button
+          id="load-older-chats-btn"
+          onClick={loadOlder}
+          disabled={sync.busy}
+          title="Fetch older Instagram and Messenger conversations from Meta (50 per click)"
+          className="w-full mt-2 py-1 px-2 text-[10px] font-black uppercase flex items-center justify-center gap-1 border-2 border-black bg-white text-[#1A2B4C] hover:bg-[#FAF3E0] cursor-pointer disabled:opacity-60"
+        >
+          <History className={`w-3 h-3 ${sync.busy ? 'animate-spin' : ''}`} />
+          {sync.busy ? 'STARTING…' : 'LOAD OLDER CHATS'}
+        </button>
+        {sync.note && (
+          <p role="status" className="mt-1 text-[10px] font-mono text-[#1A1A1A]/70">
+            {sync.note}
+          </p>
+        )}
       </div>
 
       {/* Threads List */}
