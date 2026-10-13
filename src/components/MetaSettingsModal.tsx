@@ -336,6 +336,17 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
                         <span className="font-bold">{c.label}:</span> {c.detail}
                       </div>
                     ))}
+                    <div>
+                      <span className={p.instagram_verified ? 'text-emerald-800' : 'opacity-60'}>
+                        {p.instagram_verified ? '✓' : '○'}
+                      </span>{' '}
+                      <span className="font-bold">Linked Instagram:</span>{' '}
+                      {p.instagram_verified
+                        ? `${p.linked_instagram_id} (connected to this workspace)`
+                        : p.linked_instagram_id
+                          ? `${p.linked_instagram_id} (not connected here yet)`
+                          : 'none linked to this Page on Meta'}
+                    </div>
                   </div>
                 </div>
               ))}

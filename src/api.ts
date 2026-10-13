@@ -234,6 +234,8 @@ export interface FacebookPage {
   name: string | null;
   subscribed_fields: string[] | null; // null = unknown (Meta didn't answer)
   last_webhook_at: string | null;
+  linked_instagram_id: string | null; // the Instagram account Meta links to this Page
+  instagram_verified: boolean; // ...and it is connected to this same workspace
   connected_at: string;
   live: boolean; // false: Meta didn't answer, only stored values are filled
 }
