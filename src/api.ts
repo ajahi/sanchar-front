@@ -87,6 +87,7 @@ interface ConversationDto {
   customer_id: string;
   customer_name: string | null;
   customer_username: string | null;
+  lead_phone: string | null; // the number the customer gave in chat (a sales lead exists)
 }
 
 interface MessageDto {
@@ -139,6 +140,7 @@ const toThread = (c: ConversationDto): ConversationThread => ({
   lastSeen: c.last_message_at ? fmtTime(c.last_message_at) : '',
   lastMessageAt: c.last_message_at ?? '',
   status: c.needs_attention ? 'NEEDS_HUMAN' : 'AUTO_PILOT',
+  leadPhone: c.lead_phone ?? undefined,
   messages: [],
 });
 

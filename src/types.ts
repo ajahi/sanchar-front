@@ -98,6 +98,7 @@ export interface ConversationThread {
   customerHandle?: string;
   senderHandle?: string;
   customerCity?: string;
+  leadPhone?: string; // number the customer shared in chat: green card on the left, shown on the right
   senderId?: string;
   language?: LanguageCode;
   lastSeen?: string;

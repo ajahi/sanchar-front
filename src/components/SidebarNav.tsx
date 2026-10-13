@@ -166,17 +166,22 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
             const isSelected = thread.id === activeThreadId;
             const lastMsg = thread.messages[thread.messages.length - 1];
             const isEscalated = thread.status === 'NEEDS_HUMAN';
+            const hasLead = !!thread.leadPhone;
 
             return (
               <div
                 key={thread.id}
                 id={`thread-card-${thread.id}`}
                 onClick={() => onSelectThread(thread.id)}
-                title={isEscalated ? 'Needs a person: reply to clear this' : undefined}
+                title={isEscalated ? 'Needs a person: reply to clear this' : hasLead ? 'Shared a phone number: sales lead' : undefined}
                 className={`cursor-pointer transition-all relative ${
                   isEscalated
                     ? 'needs-attention-pulse border-[5px] border-[#B8251B] p-[7px]' // thicker border, padding trimmed so the card keeps its size
-                    : 'p-2.5 border-2 bg-white border-black shadow-[2px_2px_0px_#1A1A1A] hover:bg-[#FAF3E0]'
+                    : `p-2.5 border-2 shadow-[2px_2px_0px_#1A1A1A] ${
+                        hasLead
+                          ? 'bg-emerald-100 border-emerald-700 hover:bg-emerald-200'
+                          : 'bg-white border-black hover:bg-[#FAF3E0]'
+                      }`
                 } ${isSelected ? 'translate-x-0.5' : ''}`}
               >
                 {/* Header of thread card */}
@@ -186,6 +191,11 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                     <span className="font-bold text-xs text-[#1A1A1A] truncate">
                       {thread.customerName}
                     </span>
+                    {hasLead && (
+                      <span className="shrink-0 text-[8px] font-bold font-mono bg-emerald-700 text-white px-1 border border-black">
+                        📞 LEAD
+                      </span>
+                    )}
                   </div>
                   <span className="text-[9px] text-[#1A1A1A]/60 font-mono shrink-0">
                     {thread.lastSeen}
