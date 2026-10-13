@@ -131,7 +131,7 @@ export function replyWindowClosed(messages: ChatMessage[], now = Date.now()): bo
 const toThread = (c: ConversationDto): ConversationThread => ({
   id: c.id,
   channel: c.channel,
-  customerName: c.customer_name ?? c.customer_username ?? c.customer_id,
+  customerName: c.customer_name ?? c.customer_username ?? `Customer ${c.customer_id.slice(0, 4).toUpperCase()}`,
   // WhatsApp "usernames" are the customer's +phone — no @ in front of those.
   customerHandle: c.customer_username
     ? c.channel === 'whatsapp' ? c.customer_username : `@${c.customer_username}`
