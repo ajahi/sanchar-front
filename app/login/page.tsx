@@ -94,7 +94,7 @@ export default function LoginPage() {
           Automate your <span className="text-[#CC3316]">social replies.</span>
         </h1>
         <p className="mt-3 max-w-sm text-[#6B5D4F]">
-          Connect Instagram and WhatsApp in one place. Sanchar answers your customers in Nepali, Nepglish and English.
+          Connect Instagram, WhatsApp and Messenger in one place. Sanchar answers your customers in Nepali, Nepglish and English.
         </p>
       </div>
 

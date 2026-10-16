@@ -20,6 +20,34 @@ function instagram(g: CanvasRenderingContext2D, s: number) {
   g.beginPath(); g.arc(s * .635, s * .365, s * .035, 0, TAU); g.fill();
 }
 
+function whatsapp(g: CanvasRenderingContext2D, s: number) {
+  g.fillStyle = '#25D366';
+  g.beginPath(); g.arc(s / 2, s / 2, s * .42, 0, TAU); g.fill();
+  g.fillStyle = '#fff'; // bubble ring + tail
+  g.beginPath(); g.arc(s / 2, s / 2, s * .29, 0, TAU);
+  g.moveTo(s * .31, s * .66); g.lineTo(s * .25, s * .77); g.lineTo(s * .37, s * .72); g.fill();
+  g.fillStyle = '#25D366';
+  g.beginPath(); g.arc(s / 2, s / 2, s * .235, 0, TAU); g.fill();
+  g.strokeStyle = '#fff'; g.lineCap = 'round'; // handset
+  const arc = (a: number, b: number, w: number) => {
+    g.lineWidth = s * w; g.beginPath(); g.arc(s * .56, s * .44, s * .12, a * Math.PI, b * Math.PI); g.stroke();
+  };
+  arc(.42, 1.08, .045); arc(.36, .5, .085); arc(1.0, 1.14, .085);
+}
+
+function messenger(g: CanvasRenderingContext2D, s: number) {
+  const gr = g.createLinearGradient(s * .2, s * .92, s * .8, s * .08);
+  gr.addColorStop(0, '#0099FF'); gr.addColorStop(.6, '#A033FF'); gr.addColorStop(.9, '#FF5280'); gr.addColorStop(1, '#FF7061');
+  g.fillStyle = gr;
+  g.beginPath(); g.ellipse(s / 2, s * .48, s * .4, s * .37, 0, 0, TAU); g.fill();
+  g.beginPath(); g.moveTo(s * .27, s * .7); g.lineTo(s * .25, s * .92); g.lineTo(s * .44, s * .81); g.fill();
+  g.fillStyle = g.strokeStyle = '#fff'; g.lineJoin = 'round'; g.lineWidth = s * .03; // lightning bolt
+  g.beginPath();
+  g.moveTo(s * .27, s * .6); g.lineTo(s * .44, s * .37); g.lineTo(s * .54, s * .46);
+  g.lineTo(s * .73, s * .36); g.lineTo(s * .56, s * .59); g.lineTo(s * .46, s * .5); g.closePath();
+  g.fill(); g.stroke();
+}
+
 // Sanchar mailbox on a vermilion disc; the SVG strokes with currentColor, so recolor it white.
 async function sanchar(g: CanvasRenderingContext2D, s: number) {
   g.fillStyle = '#CC3316'; g.beginPath(); g.arc(s / 2, s / 2, s * .42, 0, TAU); g.fill();
@@ -83,13 +111,15 @@ export default function BubbleScene({ hot }: { hot: boolean }) {
       return mesh;
     };
 
-    // [x, y, z, radius, logo?]: Instagram is the hero (the only social sign-in), Sanchar beside it, the rest are plain bubbles.
+    // [x, y, z, radius, logo?]: Instagram is the hero (the only social sign-in, index 0 swells on hover),
+    // WhatsApp + Messenger are the other channels Sanchar answers on, Sanchar itself, then plain bubbles.
     const specs: [number, number, number, number, ((g: CanvasRenderingContext2D, s: number) => void | Promise<void>)?][] = [
       [-0.6, 0.2, 0.3, 1.35, instagram],
-      [1.7, 1.3, -0.8, 0.85, sanchar],
-      [1.4, -1.5, 0.5, 0.45],
-      [-2.4, 1.6, -1.2, 0.35],
-      [-2.6, -0.4, -0.6, 0.5],
+      [1.7, 1.3, -0.8, 0.9, whatsapp],
+      [1.5, -1.4, 0.4, 0.8, messenger],
+      [-2.5, 1.5, -1.0, 0.6, sanchar],
+      [-2.7, -0.6, -0.6, 0.4],
+      [0.5, 2.0, -1.5, 0.3],
     ];
     const bubbles = specs.map(([x, y, z, r, draw], i) => {
       const b = new THREE.Group(); b.scale.setScalar(r);
