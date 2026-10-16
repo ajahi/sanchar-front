@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { ArrowRight, Instagram } from 'lucide-react';
+import { ArrowRight, Instagram, Mail, Phone } from 'lucide-react';
 import { SancharLogo } from '../../src/components/SancharLogo';
 import { Loader } from '../../src/components/Loader';
 import { INSTAGRAM_LOGIN_URL, getMe, login, register, resendVerification } from '../../src/api';
@@ -13,6 +13,12 @@ const BubbleScene = dynamic(() => import('../../src/components/BubbleScene'), { 
 const input =
   'w-full rounded-xl border border-[#E6D9BF] bg-[#FFFBF2] px-4 py-3 text-[15px] text-[#2A211B] placeholder-[#A89A86] focus:border-[#CC3316] focus:outline-none focus:ring-4 focus:ring-[#CC3316]/15';
 const label = 'mb-1.5 block text-xs font-semibold text-[#6B5D4F]';
+
+const CONTACTS = [
+  { href: 'mailto:contact@utsavupahar.com', text: 'contact@utsavupahar.com', Icon: Mail },
+  { href: 'mailto:himaliamit1@gmail.com', text: 'himaliamit1@gmail.com', Icon: Mail },
+  { href: 'tel:+9779765944008', text: '9765944008', Icon: Phone },
+];
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -93,9 +99,23 @@ export default function LoginPage() {
         <h1 className="max-w-xl text-4xl font-semibold leading-[1.02] sm:text-5xl lg:text-6xl">
           Automate your <span className="text-[#CC3316]">social replies.</span>
         </h1>
-        <p className="mt-3 max-w-sm text-[#6B5D4F]">
-          Connect Instagram, WhatsApp and Messenger in one place. Sanchar answers your customers in Nepali, Nepglish and English.
+        <p className="mt-3 max-w-md text-[#6B5D4F]">
+          We&apos;re helping small businesses grow by automating their social media. Connect Instagram, WhatsApp and
+          Messenger in one place, and Sanchar answers your customers in Nepali, Nepglish and English.
         </p>
+        <section aria-label="Contact us" className="pointer-events-auto mt-4 flex max-w-lg flex-wrap items-center gap-2 text-sm">
+          <span className="mr-1 font-semibold">Get in touch:</span>
+          {CONTACTS.map(({ href, text, Icon }) => (
+            <a
+              key={href}
+              href={href}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#E6D9BF] bg-[#FFFBF2]/80 px-3 py-1.5 backdrop-blur transition hover:border-[#CC3316] hover:text-[#CC3316]"
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0 text-[#CC3316]" />
+              {text}
+            </a>
+          ))}
+        </section>
       </div>
 
       <main className="relative z-10 mx-4 mb-10 mt-8 sm:mx-auto sm:max-w-md lg:fixed lg:right-12 lg:top-1/2 lg:m-0 lg:w-[420px] lg:-translate-y-1/2">
