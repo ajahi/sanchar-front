@@ -348,9 +348,10 @@ export default function App({ publicMode = false }: { publicMode?: boolean }) {
       id="app-root-container"
       className="flex flex-col h-screen w-full overflow-hidden select-none"
       style={{
-        backgroundColor: '#F5EBE0',
-        fontFamily: '"Space Mono", "Courier New", Courier, monospace',
-        color: '#1A1A1A',
+        // theme vars come from body.theme-soft (cream) or ThemeScope on /new-theme
+        backgroundColor: 'var(--t-bg)',
+        fontFamily: 'var(--t-font)',
+        color: 'var(--t-text)',
       }}
     >
       {/* Top Vintage Matchbox Header */}
