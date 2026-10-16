@@ -53,6 +53,20 @@ export const RightInspector: React.FC<RightInspectorProps> = ({
         </div>
       )}
 
+      {activeThread?.adTitle && (
+        <div className="matchbox-border p-3 bg-white">
+          <p className="text-[9px] font-bold font-mono text-[#1A1A1A]/60 uppercase">CAME FROM AD</p>
+          <p className="text-xs font-bold font-mono text-[#1A2B4C] break-words">{activeThread.adTitle}</p>
+          <p className="text-[10px] font-mono mt-0.5">
+            {activeThread.campaignName ? (
+              <span className="text-emerald-800">● campaign: {activeThread.campaignName}</span>
+            ) : (
+              <span className="text-[#B8251B]">○ not mapped yet: open CAMPAIGNS to link it</span>
+            )}
+          </p>
+        </div>
+      )}
+
       <ShopMediaPanel activeThread={activeThread} onSent={onMediaSent} />
 
       {/* Live Context Card */}

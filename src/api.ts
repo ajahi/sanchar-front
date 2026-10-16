@@ -88,6 +88,8 @@ interface ConversationDto {
   customer_name: string | null;
   customer_username: string | null;
   lead_phone: string | null; // the number the customer gave in chat (a sales lead exists)
+  campaign_name: string | null; // the campaign their ad is mapped to
+  ad_title: string | null; // the ad / ref they came from, mapped or not
 }
 
 interface MessageDto {
@@ -141,6 +143,8 @@ const toThread = (c: ConversationDto): ConversationThread => ({
   lastMessageAt: c.last_message_at ?? '',
   status: c.needs_attention ? 'NEEDS_HUMAN' : 'AUTO_PILOT',
   leadPhone: c.lead_phone ?? undefined,
+  campaignName: c.campaign_name ?? undefined,
+  adTitle: c.ad_title ?? undefined,
   messages: [],
 });
 
@@ -375,6 +379,8 @@ export interface ShopMedia {
   caption: string | null;
   permalink: string | null;
   in_stock: boolean;
+  campaign_id: string | null; // the campaign this photo is sent with
+  sort_order: number;
 }
 
 // dataTransfer type used when a Shop Photos thumbnail is dragged onto the reply box.
@@ -389,7 +395,10 @@ export const uploadShopMedia = (file: File, title: string) => {
   return fetch('/api/v1/shop-media', { method: 'POST', body: form }).then((r) => asJson<ShopMedia>(r, 'Upload failed'));
 };
 
-export const updateShopMedia = (id: string, patch: { title?: string; in_stock?: boolean }) =>
+export const updateShopMedia = (
+  id: string,
+  patch: { title?: string; in_stock?: boolean; campaign_id?: string | null; sort_order?: number }
+) =>
   sendJson('PATCH', `/api/v1/shop-media/${id}`, patch).then((r) => asJson<ShopMedia>(r, 'Update failed'));
 
 export const deleteShopMedia = async (id: string): Promise<void> => {
@@ -401,4 +410,52 @@ export const deleteShopMedia = async (id: string): Promise<void> => {
 export const sendShopMedia = (conversationId: string, mediaId: string) =>
   sendJson('POST', `/api/v1/conversations/${conversationId}/media`, { media_id: mediaId }).then(async (r) =>
     toChatMessage(await asJson<MessageDto>(r, 'Could not send the image'))
+  );
+
+// ---- Campaigns: what each ad promotes (price, blurb, photos) and which ads / ref codes map to it ----
+export interface Campaign {
+  id: string;
+  name: string;
+  price: number | null; // whole rupees
+  blurb: string | null;
+  status: 'active' | 'paused';
+  photo_count: number;
+}
+
+export interface CampaignLink {
+  id: string;
+  kind: 'ad' | 'ref';
+  external_id: string;
+  ad_title: string | null;
+  ad_image_url: string | null;
+  campaign_id: string | null; // null: an ad we have seen but nobody has mapped yet
+  created_at: string;
+}
+
+export const listCampaigns = () => fetch('/api/v1/campaigns').then((r) => asJson<Campaign[]>(r, 'Could not load campaigns'));
+
+export const createCampaign = (body: { name: string; price: number | null; blurb: string | null }) =>
+  sendJson('POST', '/api/v1/campaigns', body).then((r) => asJson<Campaign>(r, 'Could not create the campaign'));
+
+export const updateCampaign = (
+  id: string,
+  patch: { name?: string; price?: number | null; blurb?: string | null; status?: 'active' | 'paused' }
+) => sendJson('PATCH', `/api/v1/campaigns/${id}`, patch).then((r) => asJson<Campaign>(r, 'Could not save the campaign'));
+
+export const deleteCampaign = async (id: string): Promise<void> => {
+  const res = await fetch(`/api/v1/campaigns/${id}`, { method: 'DELETE' });
+  if (!res.ok) await asJson<unknown>(res, 'Could not delete the campaign');
+};
+
+export const listCampaignLinks = () =>
+  fetch('/api/v1/campaigns/links').then((r) => asJson<CampaignLink[]>(r, 'Could not load ads'));
+
+export const addCampaignLink = (kind: 'ad' | 'ref', external_id: string, campaign_id: string | null) =>
+  sendJson('POST', '/api/v1/campaigns/links', { kind, external_id, campaign_id }).then((r) =>
+    asJson<CampaignLink>(r, 'Could not add the link')
+  );
+
+export const mapCampaignLink = (id: string, campaign_id: string | null) =>
+  sendJson('PATCH', `/api/v1/campaigns/links/${id}`, { campaign_id }).then((r) =>
+    asJson<CampaignLink>(r, 'Could not map the ad')
   );
