@@ -17,6 +17,7 @@ interface HeaderProps {
   canManage?: boolean; // owner/admin: shop info, channels, sandbox, staff. Agents get the inbox + dashboard only.
   onOpenStaff?: () => void;
   onOpenCampaigns?: () => void;
+  onOpenPost?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   canManage = true,
   onOpenStaff,
   onOpenCampaigns,
+  onOpenPost,
 }) => {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
@@ -143,6 +145,10 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Settings className="w-3 h-3 text-[#1A1A1A]" />
           <span>CHANNELS</span>
+        </button>
+
+        <button id="nav-post-btn" onClick={onOpenPost} className="pill mustard-bg text-black cursor-pointer">
+          <span>POST</span>
         </button>
 
         <button id="nav-campaigns-btn" onClick={onOpenCampaigns} className="pill aged-paper text-black opacity-90 hover:opacity-100 cursor-pointer">

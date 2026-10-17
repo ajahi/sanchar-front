@@ -17,6 +17,7 @@ import { DashboardModal } from './components/DashboardModal';
 import { RAGSandboxModal } from './components/RAGSandboxModal';
 import { MetaSettingsModal } from './components/MetaSettingsModal';
 import { CampaignsModal } from './components/CampaignsModal';
+import { PostModal } from './components/PostModal';
 import { KnowledgeModal } from './components/KnowledgeModal';
 import { StaffModal } from './components/StaffModal';
 import { InboundSimulatorModal } from './components/InboundSimulatorModal';
@@ -47,6 +48,7 @@ export default function App({ publicMode = false }: { publicMode?: boolean }) {
   const [isInboundModalOpen, setIsInboundModalOpen] = useState(false);
   const [isStaffOpen, setIsStaffOpen] = useState(false);
   const [isCampaignsOpen, setIsCampaignsOpen] = useState(false);
+  const [isPostOpen, setIsPostOpen] = useState(false);
   const [canManage, setCanManage] = useState(false); // owner/admin; agents get a locked-down UI (backend enforces it too)
 
   // Filters
@@ -367,6 +369,7 @@ export default function App({ publicMode = false }: { publicMode?: boolean }) {
         canManage={canManage}
         onOpenStaff={() => setIsStaffOpen(true)}
         onOpenCampaigns={() => setIsCampaignsOpen(true)}
+        onOpenPost={() => setIsPostOpen(true)}
       />
 
       {/* Main 12-Column High Density Workspace */}
@@ -469,6 +472,7 @@ export default function App({ publicMode = false }: { publicMode?: boolean }) {
       <StaffModal open={isStaffOpen} onClose={() => setIsStaffOpen(false)} />
 
       <CampaignsModal open={isCampaignsOpen} onClose={() => setIsCampaignsOpen(false)} />
+      <PostModal open={isPostOpen} onClose={() => setIsPostOpen(false)} />
 
       <InboundSimulatorModal
         isOpen={isInboundModalOpen}

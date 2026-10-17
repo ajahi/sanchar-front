@@ -289,16 +289,18 @@ export async function sendReply(conversationId: string, text: string): Promise<C
   return toChatMessage(await res.json());
 }
 
-// ---- Shop context: what the auto-reply bot answers from (GET/PUT /api/v1/knowledge) ----
-export interface KnowledgeSection {
-  key: string;
-  label: string;
-  hint: string;
-  content: string;
+// ---- Shop context: what the auto-reply bot answers from (/api/v1/knowledge) ----
+// Topics are the owner's own (title + the answers), not fixed sections: a consultancy and a nail salon differ.
+export interface KnowledgeTopic {
+  id: string;
+  title: string;
+  content: string; // the answers the bot gives on this topic
+  hint: string; // example text from the starter suggestion it was added from
 }
 
 export interface Knowledge {
-  sections: KnowledgeSection[];
+  topics: KnowledgeTopic[];
+  suggestions: Record<string, { title: string; hint: string }[]>; // business type -> starter topics
   ai_enabled: boolean;
   max_chars: number;
 }
@@ -314,8 +316,16 @@ const sendJson = (method: string, path: string, body: unknown) =>
 
 export const getKnowledge = () => fetch('/api/v1/knowledge').then((r) => asJson<Knowledge>(r, 'Could not load shop info'));
 
-export const saveKnowledgeSection = (key: string, content: string) =>
-  sendJson('PUT', `/api/v1/knowledge/${key}`, { content }).then((r) => asJson<KnowledgeSection>(r, 'Save failed'));
+export const addKnowledgeTopic = (title: string, hint = '') =>
+  sendJson('POST', '/api/v1/knowledge', { title, hint }).then((r) => asJson<KnowledgeTopic>(r, 'Could not add the topic'));
+
+export const saveKnowledgeTopic = (id: string, title: string, content: string) =>
+  sendJson('PUT', `/api/v1/knowledge/${id}`, { title, content }).then((r) => asJson<KnowledgeTopic>(r, 'Save failed'));
+
+export const deleteKnowledgeTopic = async (id: string): Promise<void> => {
+  const res = await fetch(`/api/v1/knowledge/${id}`, { method: 'DELETE' });
+  if (!res.ok) await asJson<unknown>(res, 'Could not delete the topic');
+};
 
 export const testBot = (message: string) =>
   sendJson('POST', '/api/v1/knowledge/test', { message }).then((r) =>
@@ -382,6 +392,7 @@ export interface ShopMedia {
   title: string | null;
   caption: string | null;
   permalink: string | null;
+  ig_media_id: string | null; // the Instagram post id (imported posts, and photos posted from Sanchar)
   in_stock: boolean;
   campaign_id: string | null; // the campaign this photo is sent with
   sort_order: number;
@@ -398,6 +409,10 @@ export const uploadShopMedia = (file: File, title: string) => {
   form.append('title', title);
   return fetch('/api/v1/shop-media', { method: 'POST', body: form }).then((r) => asJson<ShopMedia>(r, 'Upload failed'));
 };
+
+// Posts an uploaded photo to the shop's Instagram feed; the photo then carries the post id and link.
+export const postToInstagram = (id: string, caption: string) =>
+  sendJson('POST', `/api/v1/shop-media/${id}/post`, { caption }).then((r) => asJson<ShopMedia>(r, 'Could not post to Instagram'));
 
 export const updateShopMedia = (
   id: string,
@@ -422,8 +437,11 @@ export interface Campaign {
   name: string;
   price: number | null; // whole rupees
   blurb: string | null;
+  details: string | null; // colours, sizes, stock...: the AI answers this campaign's chats from it
   status: 'active' | 'paused';
   photo_count: number;
+  ig_post_id: string | null; // set once posted to Instagram from Sanchar
+  ig_permalink: string | null;
 }
 
 export interface CampaignLink {
@@ -438,13 +456,17 @@ export interface CampaignLink {
 
 export const listCampaigns = () => fetch('/api/v1/campaigns').then((r) => asJson<Campaign[]>(r, 'Could not load campaigns'));
 
-export const createCampaign = (body: { name: string; price: number | null; blurb: string | null }) =>
+export const createCampaign = (body: { name: string; price: number | null; blurb: string | null; details?: string | null }) =>
   sendJson('POST', '/api/v1/campaigns', body).then((r) => asJson<Campaign>(r, 'Could not create the campaign'));
 
 export const updateCampaign = (
   id: string,
-  patch: { name?: string; price?: number | null; blurb?: string | null; status?: 'active' | 'paused' }
+  patch: { name?: string; price?: number | null; blurb?: string | null; details?: string | null; status?: 'active' | 'paused' }
 ) => sendJson('PATCH', `/api/v1/campaigns/${id}`, patch).then((r) => asJson<Campaign>(r, 'Could not save the campaign'));
+
+// Posts one of the campaign's uploaded photos to the shop's Instagram feed; the campaign keeps the post id.
+export const publishCampaign = (id: string, media_id: string, caption: string) =>
+  sendJson('POST', `/api/v1/campaigns/${id}/publish`, { media_id, caption }).then((r) => asJson<Campaign>(r, 'Could not post to Instagram'));
 
 export const deleteCampaign = async (id: string): Promise<void> => {
   const res = await fetch(`/api/v1/campaigns/${id}`, { method: 'DELETE' });
