@@ -55,8 +55,13 @@ export const RightInspector: React.FC<RightInspectorProps> = ({
 
       {activeThread?.adTitle && (
         <div className="matchbox-border p-3 bg-white">
-          <p className="text-[9px] font-bold font-mono text-[#1A1A1A]/60 uppercase">CAME FROM AD</p>
+          <p className="text-[9px] font-bold font-mono text-[#1A1A1A]/60 uppercase">{activeThread.adKind === 'ref' ? 'CAME FROM LINK' : 'CAME FROM AD'}</p>
           <p className="text-xs font-bold font-mono text-[#1A2B4C] break-words">{activeThread.adTitle}</p>
+          {activeThread.adCode && (
+            <p className="text-[10px] font-mono mt-0.5 break-all">
+              Reference code: <span className="select-all font-bold">{activeThread.adCode}</span>
+            </p>
+          )}
           <p className="text-[10px] font-mono mt-0.5">
             {activeThread.campaignName ? (
               <span className="text-emerald-800">● campaign: {activeThread.campaignName}</span>

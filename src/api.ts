@@ -90,6 +90,8 @@ interface ConversationDto {
   lead_phone: string | null; // the number the customer gave in chat (a sales lead exists)
   campaign_name: string | null; // the campaign their ad is mapped to
   ad_title: string | null; // the ad / ref they came from, mapped or not
+  ad_kind: 'ad' | 'ref' | null;
+  ad_code: string | null; // the reference code itself: Meta's ad id, or the ref code
 }
 
 interface MessageDto {
@@ -145,6 +147,8 @@ const toThread = (c: ConversationDto): ConversationThread => ({
   leadPhone: c.lead_phone ?? undefined,
   campaignName: c.campaign_name ?? undefined,
   adTitle: c.ad_title ?? undefined,
+  adKind: c.ad_kind ?? undefined,
+  adCode: c.ad_code ?? undefined,
   messages: [],
 });
 

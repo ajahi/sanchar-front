@@ -48,7 +48,7 @@ interface InboxFeedProps {
   thread: ConversationThread | null;
   onSendMessage: (text: string, sender: 'human' | 'ai') => void | Promise<void>;
   onSendMedia: (mediaId: string) => Promise<void>;
-  onSimulateInboundCustomerMessage: (threadId: string, text: string) => void;
+  onSimulateInboundCustomerMessage?: (threadId: string, text: string) => void; // demo (/new-theme) only
   confidenceThreshold: number;
   loading: boolean; // conversations or the open thread's messages are still being fetched
 }
@@ -258,8 +258,8 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Quick Simulation Dropdown */}
-          <div className="relative">
+          {/* Quick Simulation Dropdown: demo only, so it never sits on top of a real customer's chat */}
+          {onSimulateInboundCustomerMessage && <div className="relative">
             <button
               id="simulate-customer-msg-btn"
               onClick={() => setShowSimulateDropdown(!showSimulateDropdown)}
@@ -320,7 +320,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
                 </div>
               </div>
             )}
-          </div>
+          </div>}
         </div>
       </div>
 

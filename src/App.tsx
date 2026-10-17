@@ -403,7 +403,7 @@ export default function App({ publicMode = false }: { publicMode?: boolean }) {
               thread={activeThread}
               onSendMessage={handleSendMessage}
               onSendMedia={handleSendMedia}
-              onSimulateInboundCustomerMessage={handleSimulateInboundCustomerMessage}
+              onSimulateInboundCustomerMessage={publicMode ? handleSimulateInboundCustomerMessage : undefined}
               confidenceThreshold={confidenceThreshold}
             />
           </div>

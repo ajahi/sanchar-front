@@ -324,7 +324,7 @@ function CampaignCard({ c, links, photos, spare, igUser, busy, run }: {
         {refs.length > 0 ? (
           <p className={hint}>
             {igUser
-              ? 'Put this link in your bio, a story or a reel. Chats that open from it get this campaign. It works right away, no ad needed.'
+              ? 'Add this link to your Instagram bio (save the profile), or to a story with a Link sticker. Reel captions can’t hold clickable links, so say “link in bio” there. When someone taps it, Instagram opens a chat with you, and that chat gets this campaign. No ad needed.'
               : 'Connect Instagram to get a ready-made link. Until then, this is the code to add as ?ref= to your ig.me link.'}
           </p>
         ) : (

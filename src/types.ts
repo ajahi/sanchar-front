@@ -101,6 +101,8 @@ export interface ConversationThread {
   leadPhone?: string; // number the customer shared in chat: green card on the left, shown on the right
   campaignName?: string; // campaign their ad is mapped to
   adTitle?: string; // the ad / ref they came from
+  adKind?: 'ad' | 'ref';
+  adCode?: string; // the reference code itself (Meta's ad id, or the ref code)
   senderId?: string;
   language?: LanguageCode;
   lastSeen?: string;
