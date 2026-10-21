@@ -308,7 +308,10 @@ export interface Knowledge {
 async function asJson<T>(res: Response, fallback: string): Promise<T> {
   if (res.ok) return res.json();
   const detail = (await res.json().catch(() => null))?.detail;
-  throw new Error(typeof detail === 'string' ? detail : fallback);
+  if (typeof detail === 'string') throw new Error(detail);
+  // No reason we can show (e.g. a proxy's HTML error page): at least say what the status means.
+  if (res.status === 413) throw new Error('This file is too large for the server. Use a smaller image (under 5 MB).');
+  throw new Error(`${fallback} (error ${res.status}).`);
 }
 
 const sendJson = (method: string, path: string, body: unknown) =>
