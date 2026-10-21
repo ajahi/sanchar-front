@@ -11,6 +11,10 @@ const hint = 'text-xs text-[#6B5D4F]';
 const CAPTION_MAX = 2200; // Instagram's limit
 const RATIO_MIN = 0.8; // width ÷ height a feed post accepts: 4:5 portrait …
 const RATIO_MAX = 1.91; // … to 1.91:1 landscape
+// 'tall' / 'wide' when Instagram would refuse a photo of this width ÷ height, else null.
+const misfit = (r: number) => (r < RATIO_MIN ? 'tall' : r > RATIO_MAX ? 'wide' : null);
+const shapeMessage = (fit: string) =>
+  `This photo is too ${fit} for an Instagram post. Crop it to between 4:5 portrait and 1.91:1 landscape (square works) and upload it again.`;
 
 // Post a photo to the shop's Instagram from Sanchar. The owner then boosts that post in the Instagram app
 // (goal: More messages); chats from the ad arrive with the ad's id, which ties them back to this post.
@@ -48,11 +52,15 @@ export function PostModal({ open, onClose }: { open: boolean; onClose: () => voi
   const posted = uploads.filter((m) => m.ig_media_id);
   const photo = unposted.find((m) => m.id === chosen) ?? null;
   const ratio = photo ? ratios[photo.id] : undefined;
-  const badShape = ratio !== undefined && (ratio < RATIO_MIN || ratio > RATIO_MAX);
+  const badShape = ratio === undefined ? null : misfit(ratio); // photos uploaded before this check existed
 
   const upload = (file: File | undefined) =>
     file &&
     run('Uploading photo…', async () => {
+      const bitmap = await createImageBitmap(file); // checked here so a photo Instagram would refuse is never stored
+      const fit = misfit(bitmap.width / bitmap.height);
+      bitmap.close();
+      if (fit) throw new Error(shapeMessage(fit));
       const m = await uploadShopMedia(file, '');
       setMedia((all) => [m, ...(all ?? [])]);
       setChosen(m.id);
@@ -138,8 +146,7 @@ export function PostModal({ open, onClose }: { open: boolean; onClose: () => voi
             )}
             {badShape ? (
               <p role="alert" className="text-xs text-red-700">
-                This photo is too {ratio < RATIO_MIN ? 'tall' : 'wide'} for an Instagram post. Crop it to between 4:5 portrait and
-                1.91:1 landscape (square works) and upload it again. It can still be sent in chats.
+                {shapeMessage(badShape)} It can still be sent in chats.
               </p>
             ) : (
               <p className={hint}>{photo ? 'This photo will be posted.' : 'Pick a photo or upload a new one (JPG or PNG; Instagram may reject other formats).'}</p>
@@ -157,7 +164,7 @@ export function PostModal({ open, onClose }: { open: boolean; onClose: () => voi
               <p className="text-right text-[11px] text-[#6B5D4F]">{caption.length} / {CAPTION_MAX}</p>
             </div>
             <div className="flex justify-end">
-              <button className="matchbox-button-primary cursor-pointer px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50" disabled={!!busy || !photo || badShape} onClick={publish}>
+              <button className="matchbox-button-primary cursor-pointer px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50" disabled={!!busy || !photo || !!badShape} onClick={publish}>
                 <Send className="mr-1 inline h-4 w-4" />
                 Post to Instagram
               </button>
