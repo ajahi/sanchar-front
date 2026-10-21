@@ -9,6 +9,8 @@ import { Skeleton } from './Skeleton';
 const field = 'w-full rounded-lg border border-[#E6D9BF] bg-white px-3 py-2 text-sm focus:border-[#CC3316] focus:outline-none';
 const hint = 'text-xs text-[#6B5D4F]';
 const CAPTION_MAX = 2200; // Instagram's limit
+const RATIO_MIN = 0.8; // width ÷ height a feed post accepts: 4:5 portrait …
+const RATIO_MAX = 1.91; // … to 1.91:1 landscape
 
 // Post a photo to the shop's Instagram from Sanchar. The owner then boosts that post in the Instagram app
 // (goal: More messages); chats from the ad arrive with the ad's id, which ties them back to this post.
@@ -19,6 +21,7 @@ export function PostModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [justPosted, setJustPosted] = useState<ShopMedia | null>(null);
+  const [ratios, setRatios] = useState<Record<string, number>>({}); // read off each thumbnail once it loads
 
   const load = () => listShopMedia().then(setMedia).catch((e) => setError(e.message));
   useEffect(() => {
@@ -44,6 +47,8 @@ export function PostModal({ open, onClose }: { open: boolean; onClose: () => voi
   const unposted = uploads.filter((m) => !m.ig_media_id);
   const posted = uploads.filter((m) => m.ig_media_id);
   const photo = unposted.find((m) => m.id === chosen) ?? null;
+  const ratio = photo ? ratios[photo.id] : undefined;
+  const badShape = ratio !== undefined && (ratio < RATIO_MIN || ratio > RATIO_MAX);
 
   const upload = (file: File | undefined) =>
     file &&
@@ -105,7 +110,15 @@ export function PostModal({ open, onClose }: { open: boolean; onClose: () => voi
                   onClick={() => setChosen(m.id)}
                   title={m.title || 'Photo'}
                 >
-                  <img src={m.url} alt={m.title ?? ''} className="h-20 w-20 rounded-lg object-cover" />
+                  <img
+                    src={m.url}
+                    alt={m.title ?? ''}
+                    className="h-20 w-20 rounded-lg object-cover"
+                    onLoad={(e) => {
+                      const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+                      setRatios((r) => ({ ...r, [m.id]: w / h }));
+                    }}
+                  />
                 </button>
               ))}
               <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#CC3316]/50 text-[11px] text-[#6B5D4F] hover:bg-[#F1E6CC]/60">
@@ -115,7 +128,14 @@ export function PostModal({ open, onClose }: { open: boolean; onClose: () => voi
               </label>
             </div>
           )}
-          <p className={hint}>{photo ? 'This photo will be posted.' : 'Pick a photo or upload a new one (JPG or PNG; Instagram may reject other formats).'}</p>
+          {badShape ? (
+            <p role="alert" className="text-xs text-red-700">
+              This photo is too {ratio < RATIO_MIN ? 'tall' : 'wide'} for an Instagram post. Crop it to between 4:5 portrait and
+              1.91:1 landscape (square works) and upload it again. It can still be sent in chats.
+            </p>
+          ) : (
+            <p className={hint}>{photo ? 'This photo will be posted.' : 'Pick a photo or upload a new one (JPG or PNG; Instagram may reject other formats).'}</p>
+          )}
           <div className="space-y-1">
             <textarea
               className={field}
@@ -129,7 +149,7 @@ export function PostModal({ open, onClose }: { open: boolean; onClose: () => voi
             <p className="text-right text-[11px] text-[#6B5D4F]">{caption.length} / {CAPTION_MAX}</p>
           </div>
           <div className="flex justify-end">
-            <button className="matchbox-button-primary cursor-pointer px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50" disabled={busy || !photo} onClick={publish}>
+            <button className="matchbox-button-primary cursor-pointer px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50" disabled={busy || !photo || badShape} onClick={publish}>
               <Send className="mr-1 inline h-4 w-4" />
               {busy ? 'Posting…' : 'Post to Instagram'}
             </button>
