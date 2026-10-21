@@ -16,6 +16,24 @@ const misfit = (r: number) => (r < RATIO_MIN ? 'tall' : r > RATIO_MAX ? 'wide' :
 const shapeMessage = (fit: string) =>
   `This photo is too ${fit} for an Instagram post. Crop it to between 4:5 portrait and 1.91:1 landscape (square works) and upload it again.`;
 
+// Width ÷ height of the stored pixels, read from the file header. Not the browser's measurement: it turns
+// phone photos by their camera rotation tag first, which swaps width and height.
+async function storedRatio(file: File): Promise<number> {
+  const b = new DataView(await file.arrayBuffer());
+  if (b.byteLength > 24 && b.getUint32(0) === 0x89504e47) return b.getUint32(16) / b.getUint32(20); // PNG: IHDR
+  if (b.byteLength > 4 && b.getUint16(0) === 0xffd8) {
+    // JPEG: hop segment to segment until the frame header (SOFn; C4/C8/CC share the range but aren't frames)
+    for (let i = 2; i + 9 < b.byteLength; i += 2 + b.getUint16(i + 2)) {
+      const marker = b.getUint16(i);
+      if (marker >= 0xffc0 && marker <= 0xffcf && marker !== 0xffc4 && marker !== 0xffc8 && marker !== 0xffcc)
+        return b.getUint16(i + 7) / b.getUint16(i + 5);
+    }
+  }
+  const bitmap = await createImageBitmap(file); // anything else: let the browser measure
+  bitmap.close();
+  return bitmap.width / bitmap.height;
+}
+
 // Post a photo to the shop's Instagram from Sanchar. The owner then boosts that post in the Instagram app
 // (goal: More messages); chats from the ad arrive with the ad's id, which ties them back to this post.
 export function PostModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -25,7 +43,6 @@ export function PostModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [busy, setBusy] = useState<string | null>(null); // what the preloader says while a request runs
   const [error, setError] = useState<string | null>(null);
   const [justPosted, setJustPosted] = useState<ShopMedia | null>(null);
-  const [ratios, setRatios] = useState<Record<string, number>>({}); // read off each thumbnail once it loads
 
   const load = () => listShopMedia().then(setMedia).catch((e) => setError(e.message));
   useEffect(() => {
@@ -51,15 +68,11 @@ export function PostModal({ open, onClose }: { open: boolean; onClose: () => voi
   const unposted = uploads.filter((m) => !m.ig_media_id);
   const posted = uploads.filter((m) => m.ig_media_id);
   const photo = unposted.find((m) => m.id === chosen) ?? null;
-  const ratio = photo ? ratios[photo.id] : undefined;
-  const badShape = ratio === undefined ? null : misfit(ratio); // photos uploaded before this check existed
 
   const upload = (file: File | undefined) =>
     file &&
     run('Uploading photo…', async () => {
-      const bitmap = await createImageBitmap(file); // checked here so a photo Instagram would refuse is never stored
-      const fit = misfit(bitmap.width / bitmap.height);
-      bitmap.close();
+      const fit = misfit(await storedRatio(file)); // checked here so a photo Instagram would refuse is never stored
       if (fit) throw new Error(shapeMessage(fit));
       const m = await uploadShopMedia(file, '');
       setMedia((all) => [m, ...(all ?? [])]);
@@ -126,15 +139,7 @@ export function PostModal({ open, onClose }: { open: boolean; onClose: () => voi
                     onClick={() => setChosen(m.id)}
                     title={m.title || 'Photo'}
                   >
-                    <img
-                      src={m.url}
-                      alt={m.title ?? ''}
-                      className="h-20 w-20 rounded-lg object-cover"
-                      onLoad={(e) => {
-                        const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
-                        setRatios((r) => ({ ...r, [m.id]: w / h }));
-                      }}
-                    />
+                    <img src={m.url} alt={m.title ?? ''} className="h-20 w-20 rounded-lg object-cover" />
                   </button>
                 ))}
                 <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#CC3316]/50 text-[11px] text-[#6B5D4F] hover:bg-[#F1E6CC]/60">
@@ -144,13 +149,7 @@ export function PostModal({ open, onClose }: { open: boolean; onClose: () => voi
                 </label>
               </div>
             )}
-            {badShape ? (
-              <p role="alert" className="text-xs text-red-700">
-                {shapeMessage(badShape)} It can still be sent in chats.
-              </p>
-            ) : (
-              <p className={hint}>{photo ? 'This photo will be posted.' : 'Pick a photo or upload a new one (JPG or PNG; Instagram may reject other formats).'}</p>
-            )}
+            <p className={hint}>{photo ? 'This photo will be posted.' : 'Pick a photo or upload a new one (JPG or PNG; Instagram may reject other formats).'}</p>
             <div className="space-y-1">
               <textarea
                 className={field}
@@ -164,7 +163,7 @@ export function PostModal({ open, onClose }: { open: boolean; onClose: () => voi
               <p className="text-right text-[11px] text-[#6B5D4F]">{caption.length} / {CAPTION_MAX}</p>
             </div>
             <div className="flex justify-end">
-              <button className="matchbox-button-primary cursor-pointer px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50" disabled={!!busy || !photo || !!badShape} onClick={publish}>
+              <button className="matchbox-button-primary cursor-pointer px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50" disabled={!!busy || !photo} onClick={publish}>
                 <Send className="mr-1 inline h-4 w-4" />
                 Post to Instagram
               </button>
