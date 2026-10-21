@@ -358,7 +358,6 @@ export default function App({ publicMode = false }: { publicMode?: boolean }) {
     >
       {/* Top Vintage Matchbox Header */}
       <Header
-        businessName={businessName}
         activeTab={activeTab}
         setActiveTab={handleTabChange}
         metaStatus={metaStatus}
