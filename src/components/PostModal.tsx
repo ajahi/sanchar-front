@@ -9,12 +9,12 @@ import { Skeleton } from './Skeleton';
 const field = 'w-full rounded-lg border border-[#E6D9BF] bg-white px-3 py-2 text-sm focus:border-[#CC3316] focus:outline-none';
 const hint = 'text-xs text-[#6B5D4F]';
 const CAPTION_MAX = 2200; // Instagram's limit
-const RATIO_MIN = 0.8; // width ÷ height a feed post accepts: 4:5 portrait …
+const RATIO_MIN = 0.75; // width ÷ height a feed post accepts: 3:4 portrait (Meta's docs say 4:5, but 3:4 posts fine) …
 const RATIO_MAX = 1.91; // … to 1.91:1 landscape
 // 'tall' / 'wide' when Instagram would refuse a photo of this width ÷ height, else null.
 const misfit = (r: number) => (r < RATIO_MIN ? 'tall' : r > RATIO_MAX ? 'wide' : null);
 const shapeMessage = (fit: string) =>
-  `This photo is too ${fit} for an Instagram post. Crop it to between 4:5 portrait and 1.91:1 landscape (square works) and upload it again.`;
+  `This photo is too ${fit} for an Instagram post. Crop it to between 3:4 portrait and 1.91:1 landscape (square works) and upload it again.`;
 
 // Width ÷ height of the stored pixels, read from the file header. Not the browser's measurement: it turns
 // phone photos by their camera rotation tag first, which swaps width and height.
