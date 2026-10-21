@@ -12,6 +12,7 @@ import {
   INSTAGRAM_LOGIN_URL,
   InstagramProfile,
   linkFacebook,
+  unlinkFacebook,
   linkWhatsApp,
   WhatsAppAccount,
 } from '../api';
@@ -129,6 +130,12 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
       .then(setFbPages)
       .catch((e) => setFbError(e.message))
       .finally(() => setFbPinging(false));
+  };
+
+  const handleFbUnlink = (p: FacebookPage) => {
+    if (!confirm(`Disconnect "${p.name ?? p.page_id}"? Its messages stop arriving and its chats become read-only until you connect it again.`)) return;
+    setFbError(null);
+    unlinkFacebook(p.page_id).then(loadFacebook).catch((e) => setFbError(e.message));
   };
 
   const handleFbLink = () => {
@@ -324,9 +331,17 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
                       <span className="opacity-70 text-[9px] block">CONNECTED PAGE:</span>
                       <span className="font-bold">{p.name ?? '—'}</span>
                     </div>
-                    <div>
-                      <span className="opacity-70 text-[9px] block">PAGE ID:</span>
-                      <span className="font-mono">{p.page_id}</span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="opacity-70 text-[9px] block">PAGE ID:</span>
+                        <span className="font-mono">{p.page_id}</span>
+                      </div>
+                      <button
+                        onClick={() => handleFbUnlink(p)}
+                        className="pill bg-[#B8251B] text-white hover:opacity-90 cursor-pointer text-[9px]"
+                      >
+                        DISCONNECT
+                      </button>
                     </div>
                   </div>
                   <div className="p-2 bg-[#FAF3E0]/40 border border-black text-[10px] space-y-0.5">
@@ -350,6 +365,15 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
                   </div>
                 </div>
               ))}
+              {!!fbPages?.length && (
+                // Facebook's dialog → "Edit previous settings" to tick more Pages; already-linked ones stay.
+                <a
+                  href={FACEBOOK_LOGIN_URL}
+                  className="pill bg-[#1A2B4C] text-white hover:opacity-90 cursor-pointer text-[9px] inline-block"
+                >
+                  + ADD ANOTHER PAGE
+                </a>
+              )}
             </div>
           </div>
 

@@ -279,6 +279,12 @@ export async function linkFacebook(pageId: string, pageAccessToken: string): Pro
   return res.json();
 }
 
+// Channels → Disconnect: the Page's chats stay (read-only); connecting it again brings them back.
+export const unlinkFacebook = async (pageId: string): Promise<void> => {
+  const res = await fetch(`/api/v1/social-accounts/facebook/${pageId}`, { method: 'DELETE' });
+  if (!res.ok) await asJson<unknown>(res, 'Could not disconnect the Page');
+};
+
 export async function sendReply(conversationId: string, text: string): Promise<ChatMessage> {
   const res = await fetch(`/api/v1/conversations/${conversationId}/messages`, {
     method: 'POST',
