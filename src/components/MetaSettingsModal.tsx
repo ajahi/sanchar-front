@@ -15,6 +15,9 @@ import {
   unlinkFacebook,
   linkWhatsApp,
   WhatsAppAccount,
+  WhatsAppSignup,
+  loadWhatsAppSignup,
+  connectWhatsApp,
 } from '../api';
 
 // Tenants share their WhatsApp account with this business (Hachuwa market) as a partner.
@@ -154,6 +157,7 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       loadWhatsApp();
+      loadWhatsAppSignup().then(setWaSignup).catch((e) => setWaSignup(e.message));
       loadFacebook();
       setIgError(null);
       getInstagramProfiles().then(setIgProfiles).catch((e) => setIgError(e.message));
@@ -164,6 +168,20 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
   const [linkWabaId, setLinkWabaId] = useState('');
   const [linking, setLinking] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
+
+  // Meta's Embedded Signup, loaded when Channels opens. undefined = loading; a string = why it's unavailable.
+  const [waSignup, setWaSignup] = useState<WhatsAppSignup | string>();
+  const [waConnecting, setWaConnecting] = useState(false);
+
+  const handleWaSignup = () => {
+    if (typeof waSignup !== 'object') return;
+    setWaConnecting(true);
+    setWaError(null);
+    connectWhatsApp(waSignup) // opens the popup right away, inside this click
+      .then(loadWhatsApp)
+      .catch((e) => setWaError(e.message))
+      .finally(() => setWaConnecting(false));
+  };
 
   const handleLink = () => {
     setLinking(true);
@@ -484,7 +502,13 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
               )}
               {waAccounts?.length === 0 && (
                 <div className="space-y-2">
-                  <div className="opacity-70">No WhatsApp number is linked to this workspace yet.</div>
+                  <div className="opacity-70">
+                    No WhatsApp number is linked to this workspace yet. <b>Connect WhatsApp</b> below opens Meta's
+                    window: log in, pick your WhatsApp account and number, done.
+                  </div>
+                  <details className="text-[10px]">
+                  <summary className="cursor-pointer opacity-70">Or link a number by its IDs (advanced)</summary>
+                  <div className="space-y-2 pt-2">
                   <ol className="list-decimal pl-4 text-[10px] space-y-1">
                     <li>
                       Open{' '}
@@ -553,8 +577,10 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
                     disabled={linking || !linkPhoneId.trim() || !linkWabaId.trim()}
                     className="pill bg-emerald-800 text-white hover:bg-emerald-900 cursor-pointer disabled:opacity-50 text-[9px]"
                   >
-                    {linking ? 'LINKING…' : 'CONNECT WHATSAPP'}
+                    {linking ? 'LINKING…' : 'LINK NUMBER'}
                   </button>
+                  </div>
+                  </details>
                 </div>
               )}
               {waAccounts?.map((a) => (
@@ -589,6 +615,18 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
                   </div>
                 </div>
               ))}
+              {waAccounts !== null && (
+                <div className="space-y-1">
+                  <button
+                    onClick={handleWaSignup}
+                    disabled={typeof waSignup !== 'object' || waConnecting}
+                    className="pill bg-emerald-800 text-white hover:bg-emerald-900 cursor-pointer disabled:opacity-50 text-[9px]"
+                  >
+                    {waConnecting ? 'CONNECTING…' : waAccounts.length ? '+ ADD ANOTHER NUMBER' : 'CONNECT WHATSAPP'}
+                  </button>
+                  {typeof waSignup === 'string' && <div className="text-[10px] opacity-70">{waSignup}</div>}
+                </div>
+              )}
             </div>
           </div>
 

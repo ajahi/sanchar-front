@@ -246,6 +246,47 @@ export async function linkWhatsApp(phoneNumberId: string, wabaId: string): Promi
   return res.json();
 }
 
+// Channels → Connect WhatsApp: Meta's Embedded Signup popup (Facebook JS SDK). The business picks its
+// WhatsApp account + number there; the backend links every number on the accounts they granted.
+export interface WhatsAppSignup { FB: any; configId: string }
+
+let fbSdk: Promise<WhatsAppSignup> | null = null;
+
+// Load ahead of the click (when Channels opens): a popup opened after an await gets blocked.
+export const loadWhatsAppSignup = () =>
+  (fbSdk ??= fetch('/api/v1/social-accounts/whatsapp/signup-config')
+    .then((r) => asJson<{ app_id: string; config_id: string; api_version: string }>(r, 'WhatsApp sign-up is not set up'))
+    .then(
+      (cfg) =>
+        new Promise<WhatsAppSignup>((resolve, reject) => {
+          const w = window as any;
+          w.fbAsyncInit = () => {
+            w.FB.init({ appId: cfg.app_id, version: cfg.api_version, xfbml: false });
+            resolve({ FB: w.FB, configId: cfg.config_id });
+          };
+          const s = document.createElement('script');
+          s.src = 'https://connect.facebook.net/en_US/sdk.js';
+          s.async = true;
+          s.onerror = () => reject(new Error('Could not load Facebook sign-in (an ad blocker?).'));
+          document.body.appendChild(s);
+        }),
+    )
+    .catch((e) => {
+      fbSdk = null; // let the next open try again
+      throw e;
+    }));
+
+// Call straight from the click handler (the popup opens synchronously inside it).
+export const connectWhatsApp = ({ FB, configId }: WhatsAppSignup) =>
+  new Promise<string>((resolve, reject) =>
+    FB.login(
+      (res: any) => (res.authResponse?.code ? resolve(res.authResponse.code) : reject(new Error('WhatsApp sign-up was closed before it finished.'))),
+      { config_id: configId, response_type: 'code', override_default_response_type: true, extras: { setup: {}, sessionInfoVersion: '3' } },
+    ),
+  )
+    .then((code) => sendJson('POST', '/api/v1/social-accounts/whatsapp/signup', { code }))
+    .then((r) => asJson<WhatsAppAccount[]>(r, 'Could not connect WhatsApp'));
+
 // ---- Connected Facebook Page(s) (GET /api/v1/social-accounts/facebook) ----
 // Also the Channels PING: live = token works, subscribed_fields has "messages" = Meta delivers webhooks.
 export interface FacebookPage {
