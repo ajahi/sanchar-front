@@ -1,0 +1,40 @@
+name: deploy-frontend
+
+# Runs on the VPS itself (self-hosted runner with the label "sanchar", registered for THIS repo):
+# pulls branch tst into the compose directory and rebuilds the web container.
+on:
+  push:
+    branches: [tst]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false  # let a running deploy finish; the next push queues behind it
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, sanchar]
+    timeout-minutes: 20  # next build is slower than the api image
+    env:
+      APP_DIR: /home/ajahi/sanchar-front
+      BRANCH: tst
+    steps:
+      - name: Pull the branch
+        run: |
+          cd "$APP_DIR"
+          git fetch origin "$BRANCH"
+          git checkout -B "$BRANCH" "origin/$BRANCH"
+          git log --oneline -1
+
+      - name: Build and restart the web container
+        run: |
+          cd "$APP_DIR"
+          docker compose up -d --build web
+
+      - name: Wait for the login page
+        run: |
+          for i in $(seq 1 20); do
+            if curl -fsS -o /dev/null http://localhost:3000/login; then echo "web is up"; exit 0; fi
+            sleep 3
+          done
+          echo "web did not come up"; docker compose -f "$APP_DIR/docker-compose.yml" logs --tail 50 web; exit 1

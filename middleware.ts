@@ -28,5 +28,6 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next|favicon.ico).*)', '/api/v1/:path*'],
+  // .svg: public/ logos must load on the logged-out login page (the 3D bubble draws sanchar-mailbox.svg)
+  matcher: ['/((?!api|_next|favicon.ico|.*\\.svg$).*)', '/api/v1/:path*'],
 };

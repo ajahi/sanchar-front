@@ -5,7 +5,6 @@ import { SancharLogo } from './SancharLogo';
 import { ProfileModal } from './ProfileModal';
 
 interface HeaderProps {
-  businessName: string;
   activeTab: 'inbox' | 'sandbox' | 'inventory' | 'settings' | 'dashboard';
   setActiveTab: (tab: 'inbox' | 'dashboard' | 'sandbox' | 'inventory' | 'settings') => void;
   metaStatus: MetaConnectionStatus;
@@ -16,10 +15,11 @@ interface HeaderProps {
   onSignOut?: () => void;
   canManage?: boolean; // owner/admin: shop info, channels, sandbox, staff. Agents get the inbox + dashboard only.
   onOpenStaff?: () => void;
+  onOpenCampaigns?: () => void;
+  onOpenPost?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  businessName,
   activeTab,
   setActiveTab,
   unresolvedEscalationsCount,
@@ -29,6 +29,8 @@ export const Header: React.FC<HeaderProps> = ({
   onSignOut,
   canManage = true,
   onOpenStaff,
+  onOpenCampaigns,
+  onOpenPost,
 }) => {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
@@ -40,19 +42,9 @@ export const Header: React.FC<HeaderProps> = ({
           <SancharLogo className="w-7 h-7 text-[#1A1A1A]" />
         </div>
         
-        <div>
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <h1 className="serif-heading text-lg sm:text-xl md:text-2xl tracking-tighter drop-shadow-[1px_1px_0px_#000]">
-              SANCHAR (सञ्चार)
-            </h1>
-            <span className="text-[8px] sm:text-[9px] bg-[#FAF3E0] text-[#1A1A1A] px-1 py-0.5 font-bold border border-black uppercase hidden md:inline-block">
-              Safety Match Grade
-            </span>
-          </div>
-          <p className="text-[10px] sm:text-[11px] text-[#FAF3E0]/90 font-mono tracking-wide truncate max-w-[200px] sm:max-w-xs md:max-w-md">
-            {businessName} • Omnichannel v21.0
-          </p>
-        </div>
+        <h1 className="serif-heading text-lg sm:text-xl md:text-2xl tracking-tighter drop-shadow-[1px_1px_0px_#000]">
+          SANCHAR (सञ्चार)
+        </h1>
       </div>
 
       {/* Hamburger (below lg only) */}
@@ -141,6 +133,14 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Settings className="w-3 h-3 text-[#1A1A1A]" />
           <span>CHANNELS</span>
+        </button>
+
+        <button id="nav-post-btn" onClick={onOpenPost} className="pill mustard-bg text-black cursor-pointer">
+          <span>POST</span>
+        </button>
+
+        <button id="nav-campaigns-btn" onClick={onOpenCampaigns} className="pill aged-paper text-black opacity-90 hover:opacity-100 cursor-pointer">
+          <span>CAMPAIGNS</span>
         </button>
 
         <button id="nav-staff-btn" onClick={onOpenStaff} className="pill aged-paper text-black opacity-90 hover:opacity-100 cursor-pointer">
