@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { ConversationThread, ChannelType } from '../types';
-import { AlertTriangle, History } from 'lucide-react';
+import { AlertTriangle, History, Bot, UserCheck, Instagram, Facebook, MessageCircle } from 'lucide-react';
+
+const CHANNEL = {
+  instagram: { label: 'Instagram', Icon: Instagram, bg: 'bg-[#B8251B]' },
+  facebook: { label: 'Messenger', Icon: Facebook, bg: 'bg-[#1A2B4C]' },
+  whatsapp: { label: 'WhatsApp', Icon: MessageCircle, bg: 'bg-emerald-700' },
+} as const;
 import { syncHistory } from '../api';
 import { Skeleton } from './Skeleton';
 
@@ -53,29 +59,6 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
     }
     return true;
   });
-
-  const getChannelBadge = (channel: ChannelType) => {
-    switch (channel) {
-      case 'instagram':
-        return (
-          <span className="pill vermilion-bg text-white text-[9px] py-0.5 px-1.5 border-black">
-            IG DM
-          </span>
-        );
-      case 'whatsapp':
-        return (
-          <span className="pill bg-emerald-700 text-white text-[9px] py-0.5 px-1.5 border-black">
-            WHATSAPP
-          </span>
-        );
-      case 'facebook':
-        return (
-          <span className="pill bg-[#1A2B4C] text-white text-[9px] py-0.5 px-1.5 border-black">
-            FB MSG
-          </span>
-        );
-    }
-  };
 
   return (
     <aside className="border-r-4 border-black flex flex-col p-3 gap-3 overflow-y-auto bg-[#F5EBE0] select-none h-full">
@@ -220,10 +203,21 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                       }`
                 } ${isSelected ? 'translate-x-0.5' : ''}`}
               >
+                <div className="flex gap-2.5">
+                {/* Avatar: initial, channel icon in the corner (tooltip) */}
+                <div className="relative w-10 h-10 shrink-0 rounded-full border-2 border-black bg-[#FAF3E0] flex items-center justify-center font-bold text-sm">
+                  {(thread.customerName?.match(/[\p{L}\p{N}]/u)?.[0] ?? '?').toUpperCase()}
+                  <span
+                    title={CHANNEL[thread.channel].label}
+                    className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border border-black flex items-center justify-center text-white ${CHANNEL[thread.channel].bg}`}
+                  >
+                    {React.createElement(CHANNEL[thread.channel].Icon, { className: 'w-2.5 h-2.5' })}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
                 {/* Header of thread card */}
                 <div className="flex items-center justify-between mb-1 gap-1">
                   <div className="flex items-center gap-1.5 truncate">
-                    {getChannelBadge(thread.channel)}
                     <span className="font-bold text-xs text-[#1A1A1A] truncate">
                       {thread.customerName}
                     </span>
@@ -249,9 +243,13 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                 </div>
 
                 {/* Last message preview */}
-                <p className="text-[11px] text-[#1A1A1A] line-clamp-2 leading-tight italic bg-white/50 p-1 border border-black/20">
+                <p className="text-[11px] text-[#1A1A1A] truncate italic">
+                  {lastMsg?.sender === 'human' && <span title="Operator override: a person replied"><UserCheck className="inline w-3 h-3 mr-1 text-[#B8251B]" /></span>}
+                  {lastMsg?.sender === 'ai' && <span title="Replied by AI"><Bot className="inline w-3 h-3 mr-1 text-[#8F1810]" /></span>}
                   &ldquo;{lastMsg ? lastMsg.text : 'No messages yet'}&rdquo;
                 </p>
+                </div>
+                </div>
 
               </div>
             );
