@@ -440,6 +440,7 @@ export interface ShopMedia {
   url: string;
   media_type: string; // IMAGE | CAROUSEL_ALBUM | VIDEO (a reel/video shows its thumbnail)
   title: string | null;
+  tags: string[]; // lowercase words the admin confirmed (type, colour, finish, brand)
   caption: string | null;
   permalink: string | null;
   ig_media_id: string | null; // the Instagram post id (imported posts, and photos posted from Sanchar)
@@ -466,9 +467,15 @@ export const postToInstagram = (id: string, caption: string) =>
 
 export const updateShopMedia = (
   id: string,
-  patch: { title?: string; in_stock?: boolean; campaign_id?: string | null; sort_order?: number }
+  patch: { title?: string; tags?: string[]; in_stock?: boolean; campaign_id?: string | null; sort_order?: number }
 ) =>
   sendJson('PATCH', `/api/v1/shop-media/${id}`, patch).then((r) => asJson<ShopMedia>(r, 'Update failed'));
+
+// The vision model's guess of a name + tags for one photo. Saves nothing: confirm with updateShopMedia.
+export const suggestShopMediaTags = (id: string) =>
+  sendJson('POST', `/api/v1/shop-media/${id}/suggest`, {}).then((r) =>
+    asJson<{ title: string | null; tags: string[] }>(r, 'AI could not tag this photo')
+  );
 
 export const deleteShopMedia = async (id: string): Promise<void> => {
   const res = await fetch(`/api/v1/shop-media/${id}`, { method: 'DELETE' });

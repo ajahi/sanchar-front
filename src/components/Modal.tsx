@@ -3,7 +3,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { X, type LucideIcon } from 'lucide-react';
 
-const SIZES = { sm: 'max-w-md', md: 'max-w-xl', lg: 'max-w-2xl', xl: 'max-w-3xl' };
+const SIZES = { sm: 'max-w-md', md: 'max-w-xl', lg: 'max-w-2xl', xl: 'max-w-3xl', '2xl': 'max-w-5xl' };
 
 // The one modal. Native <dialog>: top layer above everything, Esc closes it, focus stays inside,
 // and a click on the backdrop closes it. Open/close animation lives in globals.css (`dialog.modal`).
