@@ -24,6 +24,64 @@ export const RightInspector: React.FC<RightInspectorProps> = ({
 }) => {
   return (
     <aside className="border-l-4 border-black flex flex-col p-3 gap-3 bg-[#F0E4D4] overflow-y-auto select-none h-full">
+      {activeThread?.leadPhone && (
+        <div className="matchbox-border p-3 bg-emerald-100 border-emerald-700">
+          <div className="flex items-center justify-between border-b-2 border-black pb-1.5 mb-2">
+            <h3 className="serif-heading text-base tracking-tight text-[#1A2B4C]">Sales Lead</h3>
+            <span className="text-[9px] font-mono font-bold bg-emerald-700 text-white px-1 border border-black">
+              {activeThread.leadOrder ? `ORDER · ${(activeThread.leadStatus ?? 'new').toUpperCase()}` : 'NUMBER SHARED'}
+            </span>
+          </div>
+          <p className="text-[9px] font-bold font-mono text-[#1A1A1A]/60 uppercase">
+            {activeThread.customerName} · {activeThread.channel}
+          </p>
+          <div className="flex items-center justify-between gap-2 mt-1">
+            <a
+              href={`tel:${activeThread.leadPhone}`}
+              className="text-lg font-bold font-mono text-[#1A2B4C] underline select-text"
+            >
+              {activeThread.leadPhone}
+            </a>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard?.writeText(activeThread.leadPhone!)}
+              className="text-[9px] font-bold underline cursor-pointer text-[#B8251B] hover:text-black font-mono"
+            >
+              COPY
+            </button>
+          </div>
+          {activeThread.leadOrder && (
+            <dl className="mt-2 pt-1.5 border-t border-black/30 text-[11px] font-mono grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 select-text">
+              <dt className="font-bold text-[#1A1A1A]/60">NAME</dt>
+              <dd className="break-words">{activeThread.leadOrder.name}</dd>
+              <dt className="font-bold text-[#1A1A1A]/60">ADDRESS</dt>
+              <dd className="break-words">{activeThread.leadOrder.address}</dd>
+              <dt className="font-bold text-[#1A1A1A]/60">ORDER</dt>
+              <dd className="break-words font-bold">{activeThread.leadOrder.items}</dd>
+            </dl>
+          )}
+        </div>
+      )}
+
+      {activeThread?.adTitle && (
+        <div className="matchbox-border p-3 bg-white">
+          <p className="text-[9px] font-bold font-mono text-[#1A1A1A]/60 uppercase">{activeThread.adKind === 'ref' ? 'CAME FROM LINK' : 'CAME FROM AD'}</p>
+          <p className="text-xs font-bold font-mono text-[#1A2B4C] break-words">{activeThread.adTitle}</p>
+          {activeThread.adCode && (
+            <p className="text-[10px] font-mono mt-0.5 break-all">
+              Reference code: <span className="select-all font-bold">{activeThread.adCode}</span>
+            </p>
+          )}
+          <p className="text-[10px] font-mono mt-0.5">
+            {activeThread.campaignName ? (
+              <span className="text-emerald-800">● campaign: {activeThread.campaignName}</span>
+            ) : (
+              <span className="text-[#B8251B]">○ not mapped yet: open CAMPAIGNS to link it</span>
+            )}
+          </p>
+        </div>
+      )}
+
       <ShopMediaPanel activeThread={activeThread} onSent={onMediaSent} />
 
       {/* Live Context Card */}

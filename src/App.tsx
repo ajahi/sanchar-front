@@ -16,6 +16,9 @@ import { RightInspector } from './components/RightInspector';
 import { DashboardModal } from './components/DashboardModal';
 import { RAGSandboxModal } from './components/RAGSandboxModal';
 import { MetaSettingsModal } from './components/MetaSettingsModal';
+import { CampaignsModal } from './components/CampaignsModal';
+import { OrdersModal } from './components/OrdersModal';
+import { PostModal } from './components/PostModal';
 import { KnowledgeModal } from './components/KnowledgeModal';
 import { StaffModal } from './components/StaffModal';
 import { InboundSimulatorModal } from './components/InboundSimulatorModal';
@@ -45,6 +48,9 @@ export default function App({ publicMode = false }: { publicMode?: boolean }) {
   const [isInventoryOpen, setIsInventoryOpen] = useState(false);
   const [isInboundModalOpen, setIsInboundModalOpen] = useState(false);
   const [isStaffOpen, setIsStaffOpen] = useState(false);
+  const [isCampaignsOpen, setIsCampaignsOpen] = useState(false);
+  const [isPostOpen, setIsPostOpen] = useState(false);
+  const [isOrdersOpen, setIsOrdersOpen] = useState(false);
   const [canManage, setCanManage] = useState(false); // owner/admin; agents get a locked-down UI (backend enforces it too)
 
   // Filters
@@ -346,14 +352,14 @@ export default function App({ publicMode = false }: { publicMode?: boolean }) {
       id="app-root-container"
       className="flex flex-col h-screen w-full overflow-hidden select-none"
       style={{
-        backgroundColor: '#F5EBE0',
-        fontFamily: '"Space Mono", "Courier New", Courier, monospace',
-        color: '#1A1A1A',
+        // theme vars come from body.theme-soft (cream) or ThemeScope on /new-theme
+        backgroundColor: 'var(--t-bg)',
+        fontFamily: 'var(--t-font)',
+        color: 'var(--t-text)',
       }}
     >
       {/* Top Vintage Matchbox Header */}
       <Header
-        businessName={businessName}
         activeTab={activeTab}
         setActiveTab={handleTabChange}
         metaStatus={metaStatus}
@@ -363,6 +369,9 @@ export default function App({ publicMode = false }: { publicMode?: boolean }) {
         onSignOut={handleSignOut}
         canManage={canManage}
         onOpenStaff={() => setIsStaffOpen(true)}
+        onOpenCampaigns={() => setIsCampaignsOpen(true)}
+        onOpenPost={() => setIsPostOpen(true)}
+        onOpenOrders={() => setIsOrdersOpen(true)}
       />
 
       {/* Main 12-Column High Density Workspace */}
@@ -399,7 +408,7 @@ export default function App({ publicMode = false }: { publicMode?: boolean }) {
               thread={activeThread}
               onSendMessage={handleSendMessage}
               onSendMedia={handleSendMedia}
-              onSimulateInboundCustomerMessage={handleSimulateInboundCustomerMessage}
+              onSimulateInboundCustomerMessage={publicMode ? handleSimulateInboundCustomerMessage : undefined}
               confidenceThreshold={confidenceThreshold}
             />
           </div>
@@ -463,6 +472,18 @@ export default function App({ publicMode = false }: { publicMode?: boolean }) {
       />
 
       <StaffModal open={isStaffOpen} onClose={() => setIsStaffOpen(false)} />
+
+      <CampaignsModal open={isCampaignsOpen} onClose={() => setIsCampaignsOpen(false)} />
+      <PostModal open={isPostOpen} onClose={() => setIsPostOpen(false)} />
+      <OrdersModal
+        open={isOrdersOpen}
+        onClose={() => setIsOrdersOpen(false)}
+        onOpenChat={(id) => {
+          setIsOrdersOpen(false);
+          setActiveThreadId(id);
+          setMobileChatOpen(true);
+        }}
+      />
 
       <InboundSimulatorModal
         isOpen={isInboundModalOpen}

@@ -12,8 +12,12 @@ import {
   INSTAGRAM_LOGIN_URL,
   InstagramProfile,
   linkFacebook,
+  unlinkFacebook,
   linkWhatsApp,
   WhatsAppAccount,
+  WhatsAppSignup,
+  loadWhatsAppSignup,
+  connectWhatsApp,
 } from '../api';
 
 // Tenants share their WhatsApp account with this business (Hachuwa market) as a partner.
@@ -131,6 +135,12 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
       .finally(() => setFbPinging(false));
   };
 
+  const handleFbUnlink = (p: FacebookPage) => {
+    if (!confirm(`Disconnect "${p.name ?? p.page_id}"? Its messages stop arriving and its chats become read-only until you connect it again.`)) return;
+    setFbError(null);
+    unlinkFacebook(p.page_id).then(loadFacebook).catch((e) => setFbError(e.message));
+  };
+
   const handleFbLink = () => {
     setFbLinking(true);
     setFbLinkError(null);
@@ -147,6 +157,7 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       loadWhatsApp();
+      loadWhatsAppSignup().then(setWaSignup).catch((e) => setWaSignup(e.message));
       loadFacebook();
       setIgError(null);
       getInstagramProfiles().then(setIgProfiles).catch((e) => setIgError(e.message));
@@ -157,6 +168,20 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
   const [linkWabaId, setLinkWabaId] = useState('');
   const [linking, setLinking] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
+
+  // Meta's Embedded Signup, loaded when Channels opens. undefined = loading; a string = why it's unavailable.
+  const [waSignup, setWaSignup] = useState<WhatsAppSignup | string>();
+  const [waConnecting, setWaConnecting] = useState(false);
+
+  const handleWaSignup = () => {
+    if (typeof waSignup !== 'object') return;
+    setWaConnecting(true);
+    setWaError(null);
+    connectWhatsApp(waSignup) // opens the popup right away, inside this click
+      .then(loadWhatsApp)
+      .catch((e) => setWaError(e.message))
+      .finally(() => setWaConnecting(false));
+  };
 
   const handleLink = () => {
     setLinking(true);
@@ -324,9 +349,17 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
                       <span className="opacity-70 text-[9px] block">CONNECTED PAGE:</span>
                       <span className="font-bold">{p.name ?? '—'}</span>
                     </div>
-                    <div>
-                      <span className="opacity-70 text-[9px] block">PAGE ID:</span>
-                      <span className="font-mono">{p.page_id}</span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="opacity-70 text-[9px] block">PAGE ID:</span>
+                        <span className="font-mono">{p.page_id}</span>
+                      </div>
+                      <button
+                        onClick={() => handleFbUnlink(p)}
+                        className="pill bg-[#B8251B] text-white hover:opacity-90 cursor-pointer text-[9px]"
+                      >
+                        DISCONNECT
+                      </button>
                     </div>
                   </div>
                   <div className="p-2 bg-[#FAF3E0]/40 border border-black text-[10px] space-y-0.5">
@@ -336,9 +369,29 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
                         <span className="font-bold">{c.label}:</span> {c.detail}
                       </div>
                     ))}
+                    <div>
+                      <span className={p.instagram_verified ? 'text-emerald-800' : 'opacity-60'}>
+                        {p.instagram_verified ? '✓' : '○'}
+                      </span>{' '}
+                      <span className="font-bold">Linked Instagram:</span>{' '}
+                      {p.instagram_verified
+                        ? `${p.linked_instagram_id} (connected to this workspace)`
+                        : p.linked_instagram_id
+                          ? `${p.linked_instagram_id} (not connected here yet)`
+                          : 'none linked to this Page on Meta'}
+                    </div>
                   </div>
                 </div>
               ))}
+              {!!fbPages?.length && (
+                // Facebook's dialog → "Edit previous settings" to tick more Pages; already-linked ones stay.
+                <a
+                  href={FACEBOOK_LOGIN_URL}
+                  className="pill bg-[#1A2B4C] text-white hover:opacity-90 cursor-pointer text-[9px] inline-block"
+                >
+                  + ADD ANOTHER PAGE
+                </a>
+              )}
             </div>
           </div>
 
@@ -449,7 +502,13 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
               )}
               {waAccounts?.length === 0 && (
                 <div className="space-y-2">
-                  <div className="opacity-70">No WhatsApp number is linked to this workspace yet.</div>
+                  <div className="opacity-70">
+                    No WhatsApp number is linked to this workspace yet. <b>Connect WhatsApp</b> below opens Meta's
+                    window: log in, pick your WhatsApp account and number, done.
+                  </div>
+                  <details className="text-[10px]">
+                  <summary className="cursor-pointer opacity-70">Or link a number by its IDs (advanced)</summary>
+                  <div className="space-y-2 pt-2">
                   <ol className="list-decimal pl-4 text-[10px] space-y-1">
                     <li>
                       Open{' '}
@@ -518,8 +577,10 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
                     disabled={linking || !linkPhoneId.trim() || !linkWabaId.trim()}
                     className="pill bg-emerald-800 text-white hover:bg-emerald-900 cursor-pointer disabled:opacity-50 text-[9px]"
                   >
-                    {linking ? 'LINKING…' : 'CONNECT WHATSAPP'}
+                    {linking ? 'LINKING…' : 'LINK NUMBER'}
                   </button>
+                  </div>
+                  </details>
                 </div>
               )}
               {waAccounts?.map((a) => (
@@ -554,6 +615,18 @@ export const MetaSettingsModal: React.FC<MetaSettingsModalProps> = ({
                   </div>
                 </div>
               ))}
+              {waAccounts !== null && (
+                <div className="space-y-1">
+                  <button
+                    onClick={handleWaSignup}
+                    disabled={typeof waSignup !== 'object' || waConnecting}
+                    className="pill bg-emerald-800 text-white hover:bg-emerald-900 cursor-pointer disabled:opacity-50 text-[9px]"
+                  >
+                    {waConnecting ? 'CONNECTING…' : waAccounts.length ? '+ ADD ANOTHER NUMBER' : 'CONNECT WHATSAPP'}
+                  </button>
+                  {typeof waSignup === 'string' && <div className="text-[10px] opacity-70">{waSignup}</div>}
+                </div>
+              )}
             </div>
           </div>
 

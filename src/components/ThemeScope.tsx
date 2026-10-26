@@ -43,6 +43,12 @@ export function ThemeScope({ children }: { children: ReactNode }) {
     '--t-text': p.text,
     '--t-border': p.border,
     '--t-accent': t.accent,
+    // reset the app-wide cream extras (body.theme-soft) so this picker stays in control
+    '--t-accent-bg': t.accent,
+    '--t-pop': t.accent,
+    '--t-pop-text': '#fff',
+    '--t-pop-soft': p.surface,
+    '--t-shadow': 'none',
     '--t-font': FONTS[t.font as keyof typeof FONTS] ?? FONTS.sans,
     '--t-size': `${t.size}px`,
     '--t-radius': `${t.radius}px`,

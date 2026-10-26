@@ -232,6 +232,32 @@ dialog.modal[open]::backdrop {
   }
 }
 
+/* ---- App-wide cream look: <body class="theme-clean theme-soft"> in app/layout.tsx ----
+   Same theme-clean overrides as /new-theme, fed fixed cream values plus pop colors for actions.
+   /new-theme's ThemeScope nests its own .theme-clean and resets these vars, so its picker still works. */
+body.theme-soft {
+  --t-bg: #FAF3E0;
+  --t-surface: #FFFBF2;
+  --t-text: #2A211B;
+  --t-border: #E6D9BF;
+  --t-accent: #CC3316;
+  --t-accent-bg: linear-gradient(135deg, #CC3316, #D81B60); /* vermilion -> raspberry, white text >= 4.9:1 */
+  --t-pop: #FFB627;                                         /* sunflower, dark text */
+  --t-pop-text: #2A211B;
+  --t-pop-soft: #FFE6A8;                                    /* butter, for large mustard areas */
+  --t-shadow: 0 1px 2px rgb(80 50 20 / .06), 0 10px 30px -14px rgb(80 50 20 / .22);
+  --t-font: 'Josefin Sans', system-ui, sans-serif;
+  --t-size: 15px;
+  --t-radius: 14px;
+}
+.btn-pop, .btn-ig {
+  color: #fff;
+  transition: transform .2s, filter .2s, box-shadow .2s;
+}
+.btn-pop { background: linear-gradient(135deg, #CC3316, #D81B60); box-shadow: 0 8px 20px -10px rgb(216 27 96 / .6); }
+.btn-ig { background: linear-gradient(135deg, #833AB4, #C13584, #D62976); box-shadow: 0 8px 20px -10px rgb(193 53 132 / .6); }
+.btn-pop:hover, .btn-ig:hover { transform: translateY(-1px); filter: brightness(1.06); }
+
 /* ---- /new-theme: flat, configurable theme (scoped; vars set by ThemeScope) ---- */
 .theme-clean {
   background: var(--t-bg);
@@ -245,16 +271,16 @@ dialog.modal[open]::backdrop {
 .theme-clean .matchbox-card,
 .theme-clean .matchbox-card-vermilion {
   border: 1px solid var(--t-border) !important;
-  box-shadow: none !important;
+  box-shadow: var(--t-shadow, none) !important;
   border-radius: var(--t-radius);
   background: var(--t-surface);
   color: var(--t-text);
 }
 .theme-clean .matchbox-button-primary,
 .theme-clean .matchbox-button-ochre {
-  background: var(--t-accent) !important;
+  background: var(--t-accent-bg, var(--t-accent)) !important;
   color: #fff !important;
-  border: 1px solid var(--t-accent) !important;
+  border: 1px solid transparent !important;
   box-shadow: none !important;
   border-radius: var(--t-radius);
   transform: none !important;
@@ -296,3 +322,22 @@ dialog.modal[open]::backdrop {
 .theme-clean [class*="border-b-2"], .theme-clean [class*="border-r-2"], .theme-clean [class*="border-l-2"],
 .theme-clean [class*="border-t-2"], .theme-clean [class*="border-2"] { border-width: 1px !important; border-color: var(--t-border) !important; }
 .theme-clean .border-black { border-color: var(--t-border) !important; }
+/* pops + softer details (all var-driven, so ThemeScope presets still apply) */
+.theme-clean .matchbox-button-ochre { background: var(--t-pop, var(--t-accent)) !important; color: var(--t-pop-text, #fff) !important; }
+/* mustard also fills big areas (AI reply bubbles), so it gets the softer butter, not the button pop */
+.theme-clean .mustard-bg,
+.theme-clean [class*="bg-[#E09A25]"] { background: var(--t-pop-soft, var(--t-surface)) !important; color: var(--t-text) !important; }
+.theme-clean button.mustard-bg,
+.theme-clean button[class*="bg-[#E09A25]"] { background: var(--t-pop, var(--t-accent)) !important; color: var(--t-pop-text, #fff) !important; }
+.theme-clean .vermilion-bg,
+.theme-clean [class*="bg-[#B8251B]"] { background: var(--t-accent-bg, var(--t-accent)) !important; }
+.theme-clean :is(.matchbox-button-primary, .matchbox-button-ochre, .matchbox-button-secondary):hover { filter: brightness(1.05); }
+.theme-clean .pill { border: 1px solid var(--t-border); border-radius: 999px; }
+.theme-clean .bg-white { background-color: var(--t-surface); }
+.theme-clean button,
+.theme-clean select,
+.theme-clean textarea,
+.theme-clean input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]) { border-radius: calc(var(--t-radius) * .7); }
+.theme-clean :focus-visible { outline: 2px solid var(--t-accent); outline-offset: 2px; }
+/* Josefin runs small: lift the 8-10px labels to a readable size */
+.theme-clean :is([class*="text-[8px]"], [class*="text-[9px]"], [class*="text-[10px]"]) { font-size: 11px !important; }

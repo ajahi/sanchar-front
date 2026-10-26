@@ -87,6 +87,13 @@ interface ConversationDto {
   customer_id: string;
   customer_name: string | null;
   customer_username: string | null;
+  lead_phone: string | null; // the number the customer gave in chat (a sales lead exists)
+  lead_order: LeadOrder | null; // the order the bot collected, if any
+  lead_status: LeadStatus | null;
+  campaign_name: string | null; // the campaign their ad is mapped to
+  ad_title: string | null; // the ad / ref they came from, mapped or not
+  ad_kind: 'ad' | 'ref' | null;
+  ad_code: string | null; // the reference code itself: Meta's ad id, or the ref code
 }
 
 interface MessageDto {
@@ -131,7 +138,7 @@ export function replyWindowClosed(messages: ChatMessage[], now = Date.now()): bo
 const toThread = (c: ConversationDto): ConversationThread => ({
   id: c.id,
   channel: c.channel,
-  customerName: c.customer_name ?? c.customer_username ?? c.customer_id,
+  customerName: c.customer_name ?? c.customer_username ?? `Customer ${c.customer_id.slice(0, 4).toUpperCase()}`,
   // WhatsApp "usernames" are the customer's +phone — no @ in front of those.
   customerHandle: c.customer_username
     ? c.channel === 'whatsapp' ? c.customer_username : `@${c.customer_username}`
@@ -139,8 +146,24 @@ const toThread = (c: ConversationDto): ConversationThread => ({
   lastSeen: c.last_message_at ? fmtTime(c.last_message_at) : '',
   lastMessageAt: c.last_message_at ?? '',
   status: c.needs_attention ? 'NEEDS_HUMAN' : 'AUTO_PILOT',
+  leadPhone: c.lead_phone ?? undefined,
+  leadOrder: c.lead_order ?? undefined,
+  leadStatus: c.lead_status ?? undefined,
+  campaignName: c.campaign_name ?? undefined,
+  adTitle: c.ad_title ?? undefined,
+  adKind: c.ad_kind ?? undefined,
+  adCode: c.ad_code ?? undefined,
   messages: [],
 });
+
+// "Load older chats": the backend pulls older Instagram/Messenger threads from Meta in the background
+// (50 per click, continuing where the last click stopped); the inbox poll shows them as they arrive.
+export async function syncHistory(): Promise<{ started: number; already_running: number }> {
+  const res = await fetch('/api/v1/conversations/sync-history', { method: 'POST' });
+  if (res.status === 403) throw new Error('Only owners and admins can load older chats.');
+  if (!res.ok) throw new Error(`Could not start loading older chats (${res.status})`);
+  return res.json();
+}
 
 export async function listConversations(): Promise<ConversationThread[]> {
   const res = await fetch('/api/v1/conversations');
@@ -227,6 +250,47 @@ export async function linkWhatsApp(phoneNumberId: string, wabaId: string): Promi
   return res.json();
 }
 
+// Channels → Connect WhatsApp: Meta's Embedded Signup popup (Facebook JS SDK). The business picks its
+// WhatsApp account + number there; the backend links every number on the accounts they granted.
+export interface WhatsAppSignup { FB: any; configId: string }
+
+let fbSdk: Promise<WhatsAppSignup> | null = null;
+
+// Load ahead of the click (when Channels opens): a popup opened after an await gets blocked.
+export const loadWhatsAppSignup = () =>
+  (fbSdk ??= fetch('/api/v1/social-accounts/whatsapp/signup-config')
+    .then((r) => asJson<{ app_id: string; config_id: string; api_version: string }>(r, 'WhatsApp sign-up is not set up'))
+    .then(
+      (cfg) =>
+        new Promise<WhatsAppSignup>((resolve, reject) => {
+          const w = window as any;
+          w.fbAsyncInit = () => {
+            w.FB.init({ appId: cfg.app_id, version: cfg.api_version, xfbml: false });
+            resolve({ FB: w.FB, configId: cfg.config_id });
+          };
+          const s = document.createElement('script');
+          s.src = 'https://connect.facebook.net/en_US/sdk.js';
+          s.async = true;
+          s.onerror = () => reject(new Error('Could not load Facebook sign-in (an ad blocker?).'));
+          document.body.appendChild(s);
+        }),
+    )
+    .catch((e) => {
+      fbSdk = null; // let the next open try again
+      throw e;
+    }));
+
+// Call straight from the click handler (the popup opens synchronously inside it).
+export const connectWhatsApp = ({ FB, configId }: WhatsAppSignup) =>
+  new Promise<string>((resolve, reject) =>
+    FB.login(
+      (res: any) => (res.authResponse?.code ? resolve(res.authResponse.code) : reject(new Error('WhatsApp sign-up was closed before it finished.'))),
+      { config_id: configId, response_type: 'code', override_default_response_type: true, extras: { setup: {}, sessionInfoVersion: '3' } },
+    ),
+  )
+    .then((code) => sendJson('POST', '/api/v1/social-accounts/whatsapp/signup', { code }))
+    .then((r) => asJson<WhatsAppAccount[]>(r, 'Could not connect WhatsApp'));
+
 // ---- Connected Facebook Page(s) (GET /api/v1/social-accounts/facebook) ----
 // Also the Channels PING: live = token works, subscribed_fields has "messages" = Meta delivers webhooks.
 export interface FacebookPage {
@@ -234,6 +298,8 @@ export interface FacebookPage {
   name: string | null;
   subscribed_fields: string[] | null; // null = unknown (Meta didn't answer)
   last_webhook_at: string | null;
+  linked_instagram_id: string | null; // the Instagram account Meta links to this Page
+  instagram_verified: boolean; // ...and it is connected to this same workspace
   connected_at: string;
   live: boolean; // false: Meta didn't answer, only stored values are filled
 }
@@ -258,6 +324,12 @@ export async function linkFacebook(pageId: string, pageAccessToken: string): Pro
   return res.json();
 }
 
+// Channels → Disconnect: the Page's chats stay (read-only); connecting it again brings them back.
+export const unlinkFacebook = async (pageId: string): Promise<void> => {
+  const res = await fetch(`/api/v1/social-accounts/facebook/${pageId}`, { method: 'DELETE' });
+  if (!res.ok) await asJson<unknown>(res, 'Could not disconnect the Page');
+};
+
 export async function sendReply(conversationId: string, text: string): Promise<ChatMessage> {
   const res = await fetch(`/api/v1/conversations/${conversationId}/messages`, {
     method: 'POST',
@@ -268,16 +340,18 @@ export async function sendReply(conversationId: string, text: string): Promise<C
   return toChatMessage(await res.json());
 }
 
-// ---- Shop context: what the auto-reply bot answers from (GET/PUT /api/v1/knowledge) ----
-export interface KnowledgeSection {
-  key: string;
-  label: string;
-  hint: string;
-  content: string;
+// ---- Shop context: what the auto-reply bot answers from (/api/v1/knowledge) ----
+// Topics are the owner's own (title + the answers), not fixed sections: a consultancy and a nail salon differ.
+export interface KnowledgeTopic {
+  id: string;
+  title: string;
+  content: string; // the answers the bot gives on this topic
+  hint: string; // example text from the starter suggestion it was added from
 }
 
 export interface Knowledge {
-  sections: KnowledgeSection[];
+  topics: KnowledgeTopic[];
+  suggestions: Record<string, { title: string; hint: string }[]>; // business type -> starter topics
   ai_enabled: boolean;
   max_chars: number;
 }
@@ -285,7 +359,10 @@ export interface Knowledge {
 async function asJson<T>(res: Response, fallback: string): Promise<T> {
   if (res.ok) return res.json();
   const detail = (await res.json().catch(() => null))?.detail;
-  throw new Error(typeof detail === 'string' ? detail : fallback);
+  if (typeof detail === 'string') throw new Error(detail);
+  // No reason we can show (e.g. a proxy's HTML error page): at least say what the status means.
+  if (res.status === 413) throw new Error('This file is too large for the server. Use a smaller image (under 5 MB).');
+  throw new Error(`${fallback} (error ${res.status}).`);
 }
 
 const sendJson = (method: string, path: string, body: unknown) =>
@@ -293,8 +370,16 @@ const sendJson = (method: string, path: string, body: unknown) =>
 
 export const getKnowledge = () => fetch('/api/v1/knowledge').then((r) => asJson<Knowledge>(r, 'Could not load shop info'));
 
-export const saveKnowledgeSection = (key: string, content: string) =>
-  sendJson('PUT', `/api/v1/knowledge/${key}`, { content }).then((r) => asJson<KnowledgeSection>(r, 'Save failed'));
+export const addKnowledgeTopic = (title: string, hint = '') =>
+  sendJson('POST', '/api/v1/knowledge', { title, hint }).then((r) => asJson<KnowledgeTopic>(r, 'Could not add the topic'));
+
+export const saveKnowledgeTopic = (id: string, title: string, content: string) =>
+  sendJson('PUT', `/api/v1/knowledge/${id}`, { title, content }).then((r) => asJson<KnowledgeTopic>(r, 'Save failed'));
+
+export const deleteKnowledgeTopic = async (id: string): Promise<void> => {
+  const res = await fetch(`/api/v1/knowledge/${id}`, { method: 'DELETE' });
+  if (!res.ok) await asJson<unknown>(res, 'Could not delete the topic');
+};
 
 export const testBot = (message: string) =>
   sendJson('POST', '/api/v1/knowledge/test', { message }).then((r) =>
@@ -359,9 +444,13 @@ export interface ShopMedia {
   url: string;
   media_type: string; // IMAGE | CAROUSEL_ALBUM | VIDEO (a reel/video shows its thumbnail)
   title: string | null;
+  tags: string[]; // lowercase words the admin confirmed (type, colour, finish, brand)
   caption: string | null;
   permalink: string | null;
+  ig_media_id: string | null; // the Instagram post id (imported posts, and photos posted from Sanchar)
   in_stock: boolean;
+  campaign_id: string | null; // the campaign this photo is sent with
+  sort_order: number;
 }
 
 // dataTransfer type used when a Shop Photos thumbnail is dragged onto the reply box.
@@ -376,8 +465,21 @@ export const uploadShopMedia = (file: File, title: string) => {
   return fetch('/api/v1/shop-media', { method: 'POST', body: form }).then((r) => asJson<ShopMedia>(r, 'Upload failed'));
 };
 
-export const updateShopMedia = (id: string, patch: { title?: string; in_stock?: boolean }) =>
+// Posts an uploaded photo to the shop's Instagram feed; the photo then carries the post id and link.
+export const postToInstagram = (id: string, caption: string) =>
+  sendJson('POST', `/api/v1/shop-media/${id}/post`, { caption }).then((r) => asJson<ShopMedia>(r, 'Could not post to Instagram'));
+
+export const updateShopMedia = (
+  id: string,
+  patch: { title?: string; tags?: string[]; in_stock?: boolean; campaign_id?: string | null; sort_order?: number }
+) =>
   sendJson('PATCH', `/api/v1/shop-media/${id}`, patch).then((r) => asJson<ShopMedia>(r, 'Update failed'));
+
+// The vision model's guess of a name + tags for one photo. Saves nothing: confirm with updateShopMedia.
+export const suggestShopMediaTags = (id: string) =>
+  sendJson('POST', `/api/v1/shop-media/${id}/suggest`, {}).then((r) =>
+    asJson<{ title: string | null; tags: string[] }>(r, 'AI could not tag this photo')
+  );
 
 export const deleteShopMedia = async (id: string): Promise<void> => {
   const res = await fetch(`/api/v1/shop-media/${id}`, { method: 'DELETE' });
@@ -389,3 +491,85 @@ export const sendShopMedia = (conversationId: string, mediaId: string) =>
   sendJson('POST', `/api/v1/conversations/${conversationId}/media`, { media_id: mediaId }).then(async (r) =>
     toChatMessage(await asJson<MessageDto>(r, 'Could not send the image'))
   );
+
+// ---- Campaigns: what each ad promotes (price, blurb, photos) and which ads / ref codes map to it ----
+export interface Campaign {
+  id: string;
+  name: string;
+  price: number | null; // whole rupees
+  blurb: string | null;
+  details: string | null; // colours, sizes, stock...: the AI answers this campaign's chats from it
+  status: 'active' | 'paused';
+  photo_count: number;
+  ig_post_id: string | null; // set once posted to Instagram from Sanchar
+  ig_permalink: string | null;
+}
+
+export interface CampaignLink {
+  id: string;
+  kind: 'ad' | 'ref';
+  external_id: string;
+  ad_title: string | null;
+  ad_image_url: string | null;
+  campaign_id: string | null; // null: an ad we have seen but nobody has mapped yet
+  created_at: string;
+}
+
+export const listCampaigns = () => fetch('/api/v1/campaigns').then((r) => asJson<Campaign[]>(r, 'Could not load campaigns'));
+
+export const createCampaign = (body: { name: string; price: number | null; blurb: string | null; details?: string | null }) =>
+  sendJson('POST', '/api/v1/campaigns', body).then((r) => asJson<Campaign>(r, 'Could not create the campaign'));
+
+export const updateCampaign = (
+  id: string,
+  patch: { name?: string; price?: number | null; blurb?: string | null; details?: string | null; status?: 'active' | 'paused' }
+) => sendJson('PATCH', `/api/v1/campaigns/${id}`, patch).then((r) => asJson<Campaign>(r, 'Could not save the campaign'));
+
+// Posts one of the campaign's uploaded photos to the shop's Instagram feed; the campaign keeps the post id.
+export const publishCampaign = (id: string, media_id: string, caption: string) =>
+  sendJson('POST', `/api/v1/campaigns/${id}/publish`, { media_id, caption }).then((r) => asJson<Campaign>(r, 'Could not post to Instagram'));
+
+export const deleteCampaign = async (id: string): Promise<void> => {
+  const res = await fetch(`/api/v1/campaigns/${id}`, { method: 'DELETE' });
+  if (!res.ok) await asJson<unknown>(res, 'Could not delete the campaign');
+};
+
+export const listCampaignLinks = () =>
+  fetch('/api/v1/campaigns/links').then((r) => asJson<CampaignLink[]>(r, 'Could not load ads'));
+
+export const addCampaignLink = (kind: 'ad' | 'ref', external_id: string, campaign_id: string | null) =>
+  sendJson('POST', '/api/v1/campaigns/links', { kind, external_id, campaign_id }).then((r) =>
+    asJson<CampaignLink>(r, 'Could not add the link')
+  );
+
+export const mapCampaignLink = (id: string, campaign_id: string | null) =>
+  sendJson('PATCH', `/api/v1/campaigns/links/${id}`, { campaign_id }).then((r) =>
+    asJson<CampaignLink>(r, 'Could not map the ad')
+  );
+
+// ---- Orders: every customer who gave a phone number, with the order the bot collected (if any) ----
+export type LeadStatus = 'new' | 'confirmed' | 'cancelled';
+
+export interface LeadOrder {
+  name: string;
+  phone: string;
+  address: string;
+  items: string;
+}
+
+export interface Lead {
+  id: string;
+  status: LeadStatus;
+  phone: string;
+  channel: ChannelType;
+  customer_name: string | null; // chat profile name; the name they gave is in `order`
+  conversation_id: string | null;
+  order: LeadOrder | null;
+  updated_at: string;
+}
+
+export const listLeads = (status?: LeadStatus) =>
+  fetch(`/api/v1/leads${status ? `?status=${status}` : ''}`).then((r) => asJson<Lead[]>(r, 'Could not load orders'));
+
+export const setLeadStatus = (id: string, status: LeadStatus) =>
+  sendJson('PATCH', `/api/v1/leads/${id}`, { status }).then((r) => asJson<Lead>(r, 'Could not update the order'));

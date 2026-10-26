@@ -185,6 +185,13 @@ export const initialThreads: ConversationThread[] = [
         confidence: 0.92,
         source: 'SHIPPING_POLICY_FAQ',
         intent: 'GENERAL_FAQ'
+      },
+      {
+        id: 'msg-f3',
+        sender: 'human',
+        senderName: 'Sita (Store Manager)',
+        text: 'Bikash ji, exchange ko lagi photo pathaidinus, hami pickup arrange garchau.',
+        timestamp: '10:05 AM'
       }
     ]
   },
@@ -221,6 +228,13 @@ export const initialThreads: ConversationThread[] = [
         source: 'SHIPPING_MATRIX',
         intent: 'DELIVERY_CHECK',
         needsHumanAlert: true
+      },
+      {
+        id: 'msg-p3',
+        sender: 'human',
+        senderName: 'Sita (Store Manager)',
+        text: 'Puja ji, bholi bihana 10 baje samma Butwal ma pugcha, hami express courier book gardai chau.',
+        timestamp: '09:40 AM'
       }
     ]
   }

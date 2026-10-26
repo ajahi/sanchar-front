@@ -19,11 +19,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,800;0,900;1,700&family=Rozha+One&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,300..700;1,400&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      {/* theme-clean + theme-soft: the cream app-wide look (globals.css); /new-theme nests its own theme-clean on top */}
+      <body className="theme-clean theme-soft">{children}</body>
     </html>
   );
 }

@@ -48,7 +48,7 @@ interface InboxFeedProps {
   thread: ConversationThread | null;
   onSendMessage: (text: string, sender: 'human' | 'ai') => void | Promise<void>;
   onSendMedia: (mediaId: string) => Promise<void>;
-  onSimulateInboundCustomerMessage: (threadId: string, text: string) => void;
+  onSimulateInboundCustomerMessage?: (threadId: string, text: string) => void; // demo (/new-theme) only
   confidenceThreshold: number;
   loading: boolean; // conversations or the open thread's messages are still being fetched
 }
@@ -94,6 +94,21 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
     const t = setTimeout(() => setToastOpen(false), 8000);
     return () => clearTimeout(t);
   }, [thread?.id, windowClosed]);
+  // Open a thread at its newest message, and follow new ones while the reader is near the bottom
+  // (scrolled up reading history = left alone). Images/stickers load late, so onLoadCapture re-pins.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const pinned = useRef(true);
+  const toBottom = () => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  };
+  useEffect(() => {
+    pinned.current = true;
+    toBottom();
+  }, [thread?.id]);
+  useEffect(() => {
+    if (pinned.current) toBottom();
+  }, [thread?.messages.length]);
   const [isGeneratingAiDraft, setIsGeneratingAiDraft] = useState(false);
   const [showSimulateDropdown, setShowSimulateDropdown] = useState(false);
   const [customSimulateText, setCustomSimulateText] = useState('');
@@ -243,8 +258,8 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Quick Simulation Dropdown */}
-          <div className="relative">
+          {/* Quick Simulation Dropdown: demo only, so it never sits on top of a real customer's chat */}
+          {onSimulateInboundCustomerMessage && <div className="relative">
             <button
               id="simulate-customer-msg-btn"
               onClick={() => setShowSimulateDropdown(!showSimulateDropdown)}
@@ -305,7 +320,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
                 </div>
               </div>
             )}
-          </div>
+          </div>}
         </div>
       </div>
 
@@ -334,7 +349,17 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
       )}
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 p-4 md:p-6 flex flex-col gap-5 overflow-y-auto">
+      <div
+        ref={scrollRef}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+        }}
+        onLoadCapture={() => {
+          if (pinned.current) toBottom();
+        }}
+        className="flex-1 p-4 md:p-6 flex flex-col gap-5 overflow-y-auto"
+      >
         {loading && thread.messages.length === 0 && <MessageSkeleton />}
         {thread.messages.map((msg) => {
           if (msg.sender === 'customer') {
