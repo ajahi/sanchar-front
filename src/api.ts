@@ -88,6 +88,8 @@ interface ConversationDto {
   customer_name: string | null;
   customer_username: string | null;
   lead_phone: string | null; // the number the customer gave in chat (a sales lead exists)
+  lead_order: LeadOrder | null; // the order the bot collected, if any
+  lead_status: LeadStatus | null;
   campaign_name: string | null; // the campaign their ad is mapped to
   ad_title: string | null; // the ad / ref they came from, mapped or not
   ad_kind: 'ad' | 'ref' | null;
@@ -145,6 +147,8 @@ const toThread = (c: ConversationDto): ConversationThread => ({
   lastMessageAt: c.last_message_at ?? '',
   status: c.needs_attention ? 'NEEDS_HUMAN' : 'AUTO_PILOT',
   leadPhone: c.lead_phone ?? undefined,
+  leadOrder: c.lead_order ?? undefined,
+  leadStatus: c.lead_status ?? undefined,
   campaignName: c.campaign_name ?? undefined,
   adTitle: c.ad_title ?? undefined,
   adKind: c.ad_kind ?? undefined,
@@ -542,3 +546,30 @@ export const mapCampaignLink = (id: string, campaign_id: string | null) =>
   sendJson('PATCH', `/api/v1/campaigns/links/${id}`, { campaign_id }).then((r) =>
     asJson<CampaignLink>(r, 'Could not map the ad')
   );
+
+// ---- Orders: every customer who gave a phone number, with the order the bot collected (if any) ----
+export type LeadStatus = 'new' | 'confirmed' | 'cancelled';
+
+export interface LeadOrder {
+  name: string;
+  phone: string;
+  address: string;
+  items: string;
+}
+
+export interface Lead {
+  id: string;
+  status: LeadStatus;
+  phone: string;
+  channel: ChannelType;
+  customer_name: string | null; // chat profile name; the name they gave is in `order`
+  conversation_id: string | null;
+  order: LeadOrder | null;
+  updated_at: string;
+}
+
+export const listLeads = (status?: LeadStatus) =>
+  fetch(`/api/v1/leads${status ? `?status=${status}` : ''}`).then((r) => asJson<Lead[]>(r, 'Could not load orders'));
+
+export const setLeadStatus = (id: string, status: LeadStatus) =>
+  sendJson('PATCH', `/api/v1/leads/${id}`, { status }).then((r) => asJson<Lead>(r, 'Could not update the order'));

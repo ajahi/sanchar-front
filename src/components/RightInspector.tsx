@@ -29,7 +29,7 @@ export const RightInspector: React.FC<RightInspectorProps> = ({
           <div className="flex items-center justify-between border-b-2 border-black pb-1.5 mb-2">
             <h3 className="serif-heading text-base tracking-tight text-[#1A2B4C]">Sales Lead</h3>
             <span className="text-[9px] font-mono font-bold bg-emerald-700 text-white px-1 border border-black">
-              NUMBER SHARED
+              {activeThread.leadOrder ? `ORDER · ${(activeThread.leadStatus ?? 'new').toUpperCase()}` : 'NUMBER SHARED'}
             </span>
           </div>
           <p className="text-[9px] font-bold font-mono text-[#1A1A1A]/60 uppercase">
@@ -50,6 +50,16 @@ export const RightInspector: React.FC<RightInspectorProps> = ({
               COPY
             </button>
           </div>
+          {activeThread.leadOrder && (
+            <dl className="mt-2 pt-1.5 border-t border-black/30 text-[11px] font-mono grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 select-text">
+              <dt className="font-bold text-[#1A1A1A]/60">NAME</dt>
+              <dd className="break-words">{activeThread.leadOrder.name}</dd>
+              <dt className="font-bold text-[#1A1A1A]/60">ADDRESS</dt>
+              <dd className="break-words">{activeThread.leadOrder.address}</dd>
+              <dt className="font-bold text-[#1A1A1A]/60">ORDER</dt>
+              <dd className="break-words font-bold">{activeThread.leadOrder.items}</dd>
+            </dl>
+          )}
         </div>
       )}
 

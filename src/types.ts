@@ -1,3 +1,5 @@
+import type { LeadOrder, LeadStatus } from './api';
+
 export type PlatformChannel = 'facebook' | 'instagram' | 'whatsapp';
 export type ChannelType = PlatformChannel;
 
@@ -99,6 +101,8 @@ export interface ConversationThread {
   senderHandle?: string;
   customerCity?: string;
   leadPhone?: string; // number the customer shared in chat: green card on the left, shown on the right
+  leadOrder?: LeadOrder; // the order the bot collected (name, phone, address, items)
+  leadStatus?: LeadStatus;
   campaignName?: string; // campaign their ad is mapped to
   adTitle?: string; // the ad / ref they came from
   adKind?: 'ad' | 'ref';

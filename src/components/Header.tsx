@@ -17,6 +17,7 @@ interface HeaderProps {
   onOpenStaff?: () => void;
   onOpenCampaigns?: () => void;
   onOpenPost?: () => void;
+  onOpenOrders?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenStaff,
   onOpenCampaigns,
   onOpenPost,
+  onOpenOrders,
 }) => {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
@@ -93,6 +95,10 @@ export const Header: React.FC<HeaderProps> = ({
           }`}
         >
           <span>DASHBOARD</span>
+        </button>
+
+        <button id="nav-orders-btn" onClick={onOpenOrders} className="pill aged-paper text-black opacity-90 hover:opacity-100 cursor-pointer">
+          <span>ORDERS</span>
         </button>
 
         {canManage && (<>
