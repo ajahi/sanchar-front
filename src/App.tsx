@@ -478,6 +478,7 @@ export default function App({ publicMode = false }: { publicMode?: boolean }) {
       <OrdersModal
         open={isOrdersOpen}
         onClose={() => setIsOrdersOpen(false)}
+        canManage={canManage}
         onOpenChat={(id) => {
           setIsOrdersOpen(false);
           setActiveThreadId(id);

@@ -2,7 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { ClipboardList } from 'lucide-react';
-import { listLeads, setLeadStatus, type Lead, type LeadStatus } from '../api';
+import {
+  getKitchen,
+  getKitchenCatalog,
+  listLeads,
+  setLeadStatus,
+  type KitchenCatalog,
+  type KitchenSettings,
+  type Lead,
+  type LeadStatus,
+} from '../api';
+import { KitchenOrder, KitchenSettingsBar, SentBadge } from './KitchenPanel';
 import { Modal } from './Modal';
 import { Skeleton } from './Skeleton';
 
@@ -23,15 +33,29 @@ export function OrdersModal({
   open,
   onClose,
   onOpenChat,
+  canManage,
 }: {
   open: boolean;
   onClose: () => void;
   onOpenChat: (conversationId: string) => void;
+  canManage: boolean;
 }) {
   const [tab, setTab] = useState(0);
   const [leads, setLeads] = useState<Lead[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [kitchen, setKitchen] = useState<KitchenSettings | null>(null);
+  const [catalog, setCatalog] = useState<KitchenCatalog | null>(null);
+  const [kitchenOpen, setKitchenOpen] = useState<string | null>(null); // lead whose kitchen panel is open
+
+  useEffect(() => {
+    if (!open) return;
+    getKitchen().then(setKitchen).catch(() => setKitchen(null));
+  }, [open]);
+
+  useEffect(() => {
+    if (kitchen?.configured) getKitchenCatalog().then(setCatalog).catch(() => setCatalog(null));
+  }, [kitchen?.configured, kitchen?.synced_at]);
 
   useEffect(() => {
     if (!open) return;
@@ -60,6 +84,7 @@ export function OrdersModal({
         <p className="text-xs text-[#6B5D4F]">
           When a customer wants to buy or book, the bot asks for their name, phone, address and order. Call them, then mark the order.
         </p>
+        <KitchenSettingsBar canManage={canManage} settings={kitchen} onChange={setKitchen} />
         <div role="tablist" className="flex flex-wrap gap-1.5">
           {TABS.map((t, i) => (
             <button
@@ -103,6 +128,8 @@ export function OrdersModal({
               ) : (
                 <p className="text-xs text-[#6B5D4F]">Shared a number, no order details yet.</p>
               )}
+              {l.kitchen && <SentBadge sent={l.kitchen} />}
+              {!l.kitchen && l.kitchen_error && <p className="text-xs text-red-800">Did not reach the kitchen: {l.kitchen_error}</p>}
               <div className="flex flex-wrap gap-2 pt-1">
                 {l.status !== 'confirmed' && (
                   <button className={primary} disabled={busy === l.id} onClick={() => move(l, 'confirmed')}>CONFIRM</button>
@@ -113,10 +140,25 @@ export function OrdersModal({
                 {l.status !== 'new' && (
                   <button className={secondary} disabled={busy === l.id} onClick={() => move(l, 'new')}>BACK TO CONFIRM</button>
                 )}
+                {l.order && !l.kitchen && kitchen?.configured && catalog && (
+                  <button className={secondary} onClick={() => setKitchenOpen(kitchenOpen === l.id ? null : l.id)}>
+                    {kitchenOpen === l.id ? 'HIDE KITCHEN' : 'KITCHEN…'}
+                  </button>
+                )}
                 {l.conversation_id && (
                   <button className={secondary} onClick={() => onOpenChat(l.conversation_id!)}>OPEN CHAT</button>
                 )}
               </div>
+              {kitchenOpen === l.id && catalog && (
+                <KitchenOrder
+                  leadId={l.id}
+                  catalog={catalog}
+                  onSent={(sent) => {
+                    setLeads((ls) => ls && ls.map((x) => (x.id === l.id ? { ...x, kitchen: sent, kitchen_error: null } : x)));
+                    setKitchenOpen(null);
+                  }}
+                />
+              )}
             </li>
           ))}
         </ul>

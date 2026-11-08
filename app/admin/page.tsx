@@ -15,8 +15,73 @@ function Stat({ label, value }: { label: string; value: number | string }) {
   );
 }
 
+// One row per day (Nepal dates), all tenants: GET /api/v1/admin/activity
+type Day = { day: string; conversations: number; messages: number; ai_replies: number; total_conversations: number; total_messages: number };
+const getActivity = (days: number): Promise<Day[]> =>
+  fetch(`/api/v1/admin/activity?days=${days}`).then((r) => (r.ok ? r.json() : Promise.reject(new Error('Could not load activity'))));
+
+const ACCENT = '#B8251B';
+
+// One series per chart (no shared axis); hovering a day shows its value in the big number.
+function Chart({ title, days, value, bars }: { title: string; days: Day[]; value: (d: Day) => number; bars?: boolean }) {
+  const [hover, setHover] = useState<number | null>(null);
+  if (!days.length) return null;
+  const W = 600, H = 140, n = days.length;
+  const vals = days.map(value);
+  const max = Math.max(1, ...vals);
+  const bw = W / n;
+  const x = (i: number) => (bars ? i * bw + bw / 2 : n < 2 ? W / 2 : (i / (n - 1)) * W);
+  const y = (v: number) => H - (v / max) * (H - 6);
+  const line = vals.map((v, i) => `${i ? 'L' : 'M'}${x(i)},${y(v)}`).join('');
+  const shown = hover ?? n - 1;
+  const gap = bw > 4 ? 1 : 0;
+  return (
+    <div className="matchbox-border bg-white p-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-[10px] uppercase tracking-widest text-stone-600">{title}</p>
+        <p className="text-[10px] text-stone-600 tabular-nums">{days[shown].day}</p>
+      </div>
+      <p className="text-2xl font-black tabular-nums">{vals[shown].toLocaleString()}</p>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        className="w-full h-32 mt-2 cursor-crosshair"
+        role="img"
+        aria-label={`${title}: ${vals[n - 1]} on ${days[n - 1].day}, from ${vals[0]} on ${days[0].day}`}
+        onMouseMove={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          const f = (e.clientX - r.left) / r.width;
+          setHover(Math.min(n - 1, Math.max(0, bars ? Math.floor(f * n) : Math.round(f * (n - 1)))));
+        }}
+        onMouseLeave={() => setHover(null)}
+      >
+        <line x1={0} x2={W} y1={H} y2={H} stroke="#a8a29e" vectorEffect="non-scaling-stroke" />
+        {bars ? (
+          vals.map((v, i) => (
+            <rect key={i} x={i * bw + gap} y={y(v)} width={Math.max(bw - gap * 2, 0.5)} height={H - y(v)} fill={i === hover ? ACCENT : '#292524'} />
+          ))
+        ) : (
+          <>
+            <path d={`${line}L${x(n - 1)},${H}L${x(0)},${H}Z`} fill={ACCENT} fillOpacity={0.08} />
+            <path d={line} fill="none" stroke={ACCENT} strokeWidth={2} vectorEffect="non-scaling-stroke" />
+          </>
+        )}
+        {hover !== null && (
+          <line x1={x(hover)} x2={x(hover)} y1={0} y2={H} stroke="#78716c" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+        )}
+      </svg>
+      <div className="flex justify-between text-[10px] text-stone-600 tabular-nums">
+        <span>{days[0].day}</span>
+        <span>{days[n - 1].day}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [tenants, setTenants] = useState<AdminTenant[] | null>(null);
+  const [activity, setActivity] = useState<Day[]>([]);
+  const [range, setRange] = useState(90);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [q, setQ] = useState('');
@@ -28,6 +93,10 @@ export default function AdminPage() {
       .then((me) => (me.roles.includes('super_admin') ? load() : window.location.replace('/')))
       .catch(() => window.location.replace('/login'));
   }, []);
+
+  useEffect(() => {
+    if (tenants) getActivity(range).then(setActivity).catch((e) => setError(e.message));
+  }, [range, tenants !== null]); // once the tenant list (and so the super-admin check) is in, and on each range change
 
   const toggle = async (t: AdminTenant) => {
     if (!t.ai_auto_reply && !t.has_knowledge && !confirm(`${t.name} has no shop info saved. The bot will have nothing to answer from. Turn AI on anyway?`)) return;
@@ -71,6 +140,27 @@ export default function AdminPage() {
         <Stat label="Messages" value={sum('messages')} />
         <Stat label="AI replies" value={sum('ai_replies')} />
         <Stat label="Need a human" value={sum('open_handovers')} />
+      </section>
+
+      <section className="space-y-2">
+        <div className="flex items-center gap-2">
+          <p className="text-[10px] uppercase tracking-widest text-stone-600 mr-1">Growth</p>
+          {[30, 90, 365].map((d) => (
+            <button
+              key={d}
+              onClick={() => setRange(d)}
+              aria-pressed={range === d}
+              className={`pill cursor-pointer ${range === d ? 'bg-black text-white' : 'aged-paper text-black'}`}
+            >
+              {d === 365 ? '1 year' : `${d} days`}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Chart title="Conversations collected (total)" days={activity} value={(d) => d.total_conversations} />
+          <Chart title="Messages collected (total)" days={activity} value={(d) => d.total_messages} />
+          <Chart title="Messages per day" days={activity} value={(d) => d.messages} bars />
+        </div>
       </section>
 
       {error && <p role="alert" className="font-bold text-[#B8251B]">{error}</p>}

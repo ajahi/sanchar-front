@@ -105,6 +105,9 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
   useEffect(() => {
     pinned.current = true;
     toBottom();
+    // Arrow keys / PageUp / PageDown scroll the focused pane: hand focus to the messages on open,
+    // otherwise they keep scrolling the chat list that was just clicked.
+    scrollRef.current?.focus({ preventScroll: true });
   }, [thread?.id]);
   useEffect(() => {
     if (pinned.current) toBottom();
@@ -351,6 +354,8 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
       {/* Messages Scroll Area */}
       <div
         ref={scrollRef}
+        tabIndex={0}
+        aria-label="Messages"
         onScroll={(e) => {
           const el = e.currentTarget;
           pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;

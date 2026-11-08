@@ -23,7 +23,7 @@ export const RightInspector: React.FC<RightInspectorProps> = ({
   onMediaSent,
 }) => {
   return (
-    <aside className="border-l-4 border-black flex flex-col p-3 gap-3 bg-[#F0E4D4] overflow-y-auto select-none h-full">
+    <aside tabIndex={0} aria-label="Customer details" className="border-l-4 border-black flex flex-col p-3 gap-3 bg-[#F0E4D4] overflow-y-auto select-none h-full">
       {activeThread?.leadPhone && (
         <div className="matchbox-border p-3 bg-emerald-100 border-emerald-700">
           <div className="flex items-center justify-between border-b-2 border-black pb-1.5 mb-2">

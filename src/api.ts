@@ -565,6 +565,8 @@ export interface Lead {
   customer_name: string | null; // chat profile name; the name they gave is in `order`
   conversation_id: string | null;
   order: LeadOrder | null;
+  kitchen: KitchenSent | null; // set once this order is in the business's own order system
+  kitchen_error: string | null; // the last automatic send that failed
   updated_at: string;
 }
 
@@ -573,3 +575,64 @@ export const listLeads = (status?: LeadStatus) =>
 
 export const setLeadStatus = (id: string, status: LeadStatus) =>
   sendJson('PATCH', `/api/v1/leads/${id}`, { status }).then((r) => asJson<Lead>(r, 'Could not update the order'));
+
+// ---- Kitchen: the business's own online-order system (its website checkout) that orders are sent into ----
+export interface KitchenSettings {
+  configured: boolean;
+  base_url: string | null;
+  email: string | null;
+  send_enabled: boolean; // off: staff only see what would be sent, nothing reaches the kitchen
+  auto_send: boolean; // send the moment the customer confirms, when everything matched
+  synced_at: string | null;
+  item_count: number;
+  location_count: number;
+}
+
+export interface KitchenSent {
+  kitchen_order_id: number | string | null;
+  total: number;
+  area: string;
+  lines: [string, number, number][]; // name, quantity, price
+  at: string;
+}
+
+export interface KitchenLine {
+  text?: string | null; // the order line as the bot wrote it
+  product_id: string | null; // null: matched nothing, pick it
+  quantity: number;
+}
+
+export interface KitchenPlan {
+  lines: KitchenLine[];
+  location: string | null; // an area, 'Pick up', or null (pick it)
+  send_enabled: boolean;
+  sent: KitchenSent | null;
+  error: string | null;
+  body: unknown | null; // exactly what would be posted
+}
+
+export interface KitchenCatalog {
+  items: { id: string; name: string; price: number; category: string }[];
+  areas: { address: string; rate: number }[];
+}
+
+export const KITCHEN_PICKUP = 'Pick up';
+
+export const getKitchen = () => fetch('/api/v1/kitchen').then((r) => asJson<KitchenSettings>(r, 'Could not load the order system'));
+
+export const saveKitchen = (body: { base_url: string; email: string | null; send_enabled: boolean; auto_send: boolean }) =>
+  sendJson('PUT', '/api/v1/kitchen', body).then((r) => asJson<KitchenSettings>(r, 'Could not save the order system'));
+
+export const syncKitchen = () =>
+  fetch('/api/v1/kitchen/sync', { method: 'POST' }).then((r) => asJson<KitchenSettings>(r, 'Could not read the menu'));
+
+export const getKitchenCatalog = () =>
+  fetch('/api/v1/kitchen/catalog').then((r) => asJson<KitchenCatalog>(r, 'Could not load the menu'));
+
+export const getKitchenPlan = (leadId: string) =>
+  fetch(`/api/v1/kitchen/orders/${leadId}`).then((r) => asJson<KitchenPlan>(r, 'Could not match the order'));
+
+export const sendToKitchen = (leadId: string, lines: { product_id: string; quantity: number }[], location: string) =>
+  sendJson('POST', `/api/v1/kitchen/orders/${leadId}`, { lines, location }).then((r) =>
+    asJson<KitchenPlan>(r, 'Could not send the order')
+  );
