@@ -1,6 +1,32 @@
 // Thin client for the FastAPI backend, reached through the /api/v1 rewrite.
 // Auth is the httpOnly session cookie; the browser attaches it automatically.
 
+// Session ended while a page is open (30-min cookie ran out, user removed or deactivated): every call
+// starts failing 401 and the polls fail silently. One watcher on fetch covers all ~60 calls in this file.
+// A 401 alone is not proof: a tenant-less super admin gets 401 from tenant routes with a good session,
+// so /auth/me decides. Dead session -> clear the cookie (else middleware bounces /login back) -> /login.
+const PUBLIC_PAGES = ['/login', '/verify', '/new-theme'];
+if (typeof window !== 'undefined' && !(window as { nsFetchWatched?: boolean }).nsFetchWatched) {
+  (window as { nsFetchWatched?: boolean }).nsFetchWatched = true;
+  const realFetch = window.fetch.bind(window);
+  let checking: Promise<void> | null = null; // the 5s polls fail together: check once
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const res = await realFetch(input, init);
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    if (res.status === 401 && url.includes('/api/v1/') && !PUBLIC_PAGES.includes(window.location.pathname)) {
+      checking ??= realFetch('/api/v1/auth/me')
+        .then(async (me) => {
+          if (me.status !== 401) return;
+          await realFetch('/api/v1/auth/logout', { method: 'POST' }).catch(() => undefined);
+          window.location.replace('/login');
+        })
+        .catch(() => undefined) // offline: try again on the next 401
+        .finally(() => { checking = null; });
+    }
+    return res;
+  };
+}
+
 export async function login(email: string, password: string): Promise<void> {
   const res = await fetch('/api/v1/auth/login', {
     method: 'POST',
