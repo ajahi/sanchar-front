@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ConversationThread, ChatMessage, ChannelType } from '../types';
 import { Skeleton } from './Skeleton';
-import { Send, Sparkles, UserCheck, Bot, Clock, Flame } from 'lucide-react';
+import { Send, Sparkles, UserCheck, Bot, Clock, Flame, FileDown } from 'lucide-react';
 
 const box = 'block mt-2 max-h-64 max-w-full border-2 border-black';
 
@@ -226,6 +226,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragOver(false);
       }}
       onDrop={handleDrop}
+      data-print-chat
     >
       {dragOver && (
         <div className="absolute inset-0 z-40 bg-[#E09A25]/30 border-4 border-dashed border-[#B8251B] flex items-center justify-center pointer-events-none">
@@ -260,7 +261,21 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-print-hide>
+          {/* The browser's print dialog -> "Save to PDF": the whole chat as one file (print styles in globals.css) */}
+          <button
+            type="button"
+            onClick={() => {
+              const title = document.title; // the PDF's suggested file name
+              document.title = `Sanchar chat - ${thread.customerName} - ${new Date().toISOString().slice(0, 10)}`;
+              window.print();
+              document.title = title;
+            }}
+            className="pill bg-white text-black hover:bg-amber-100 cursor-pointer text-[9px]"
+          >
+            <FileDown className="w-3 h-3" />
+            SAVE CHAT (PDF)
+          </button>
           {/* Quick Simulation Dropdown: demo only, so it never sits on top of a real customer's chat */}
           {onSimulateInboundCustomerMessage && <div className="relative">
             <button
@@ -332,6 +347,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
       {windowClosed && toastOpen && (
         <div
           role="alert"
+          data-print-hide
           className="absolute top-3 left-1/2 -translate-x-1/2 z-30 w-[min(32rem,calc(100%-2rem))] bg-amber-100 text-[#1A1A1A] px-3 py-2.5 border-2 border-black shadow-[4px_4px_0px_#1A1A1A] flex items-start gap-2"
         >
           <Clock className="w-4 h-4 mt-0.5 text-[#B8251B] shrink-0" />
@@ -356,6 +372,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
         ref={scrollRef}
         tabIndex={0}
         aria-label="Messages"
+        data-print-scroll
         onScroll={(e) => {
           const el = e.currentTarget;
           pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
@@ -449,7 +466,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
       </div>
 
       {/* Canned Quick Responses Bar */}
-      <div className="px-4 py-2 border-t-2 border-black bg-[#FAF3E0] flex items-center gap-2 overflow-x-auto shrink-0">
+      <div data-print-hide className="px-4 py-2 border-t-2 border-black bg-[#FAF3E0] flex items-center gap-2 overflow-x-auto shrink-0">
         <span className="text-[9px] font-bold text-[#1A2B4C] uppercase whitespace-nowrap font-serif">
           QUICK REPLIES:
         </span>
@@ -465,7 +482,7 @@ export const InboxFeed: React.FC<InboxFeedProps> = ({
       </div>
 
       {/* Bottom Reply Box */}
-      <div className="p-3 md:p-4 border-t-4 border-black bg-white flex flex-col gap-2 shrink-0">
+      <div data-print-hide className="p-3 md:p-4 border-t-4 border-black bg-white flex flex-col gap-2 shrink-0">
         {(attached.length > 0 || dropNote) && (
           <div className="flex flex-wrap items-center gap-2">
             {attached.map((m) => (

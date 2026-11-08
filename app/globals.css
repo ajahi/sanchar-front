@@ -341,3 +341,17 @@ body.theme-soft {
 .theme-clean :focus-visible { outline: 2px solid var(--t-accent); outline-offset: 2px; }
 /* Josefin runs small: lift the 8-10px labels to a readable size */
 .theme-clean :is([class*="text-[8px]"], [class*="text-[9px]"], [class*="text-[10px]"]) { font-size: 11px !important; }
+
+/* "Save chat (PDF)": print only the open chat, full length. On screen the dashboard is one screen tall and each
+   pane scrolls inside itself, so a plain print or full-page screenshot gets one screenful. Here everything that is
+   not the chat or one of its ancestors is dropped, and the ancestors and the message list grow to fit. */
+@media print {
+  html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+  body { print-color-adjust: exact; -webkit-print-color-adjust: exact; } /* keep the bubble colours */
+  body *:not([data-print-chat], [data-print-chat] *, :has([data-print-chat])),
+  [data-print-hide] { display: none !important; }
+  body *:has([data-print-chat]) { display: block !important; height: auto !important; min-height: 0 !important; overflow: visible !important; }
+  [data-print-chat] { height: auto !important; overflow: visible !important; border: 0 !important; }
+  [data-print-scroll] { height: auto !important; overflow: visible !important; flex: none !important; }
+  [data-print-scroll] > * { break-inside: avoid; } /* a message is never split across two pages */
+}
