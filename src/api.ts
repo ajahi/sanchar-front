@@ -456,7 +456,40 @@ export interface AdminTenant {
   ai_replies: number;
   last_message_at: string | null;
   created_at: string;
+  funnel_key: string | null; // null = the funnel named by business_type, else the built-in order steps
+  business_type: string | null;
 }
+
+// ---- Conversation funnels: how a tenant's bot leads a chat to an order (backend services/funnels.py) ----
+export interface FunnelField { key: string; label: string; required: boolean; max: number }
+export interface FunnelDraft {
+  key: string;
+  name: string;
+  label: string;
+  steps: string; // prompt text; {label} and {summary_label} mark where the labels go
+  fields: FunnelField[];
+  triggers: string[]; // save_order, notify, website_post
+  checks: { type: string; message?: string }[]; // [{type: 'opening_hours', message: '... {opens} ...'}]
+}
+export interface Funnel extends FunnelDraft { id: string; version: number; active: boolean; created_at: string }
+
+export const adminListFunnels = () => fetch('/api/v1/admin/funnels').then((r) => asJson<Funnel[]>(r, 'Could not load funnels'));
+
+// Saving adds a new version of the key and makes it live for every tenant on it.
+export const adminSaveFunnel = (f: FunnelDraft) =>
+  sendJson('POST', '/api/v1/admin/funnels', f).then((r) => asJson<Funnel>(r, 'Could not save the funnel'));
+
+export const adminActivateFunnel = (key: string, version: number) =>
+  sendJson('POST', `/api/v1/admin/funnels/${key}/activate/${version}`, {}).then((r) => asJson<Funnel>(r, 'Could not activate'));
+
+export const adminSetTenantFunnel = (id: string, funnel_key: string | null) =>
+  sendJson('PATCH', `/api/v1/admin/tenants/${id}/funnel`, { funnel_key }).then((r) => asJson<unknown>(r, 'Could not set the funnel'));
+
+// What a tenant's bot would reply under an unsaved draft. Nothing is sent or saved.
+export const adminTryFunnel = (tenant_id: string, message: string, history: [string, string][], draft: FunnelDraft) =>
+  sendJson('POST', '/api/v1/admin/funnels/try', { tenant_id, message, history, draft }).then((r) =>
+    asJson<{ reply: string; funnel: string }>(r, 'Could not try the funnel')
+  );
 
 export const adminListTenants = () => fetch('/api/v1/admin/tenants').then((r) => asJson<AdminTenant[]>(r, 'Could not load tenants'));
 

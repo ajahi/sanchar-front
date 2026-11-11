@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { adminListTenants, adminSetTenantAi, getMe, logout, type AdminTenant } from '../../src/api';
+import {
+  adminListFunnels, adminListTenants, adminSetTenantAi, adminSetTenantFunnel, getMe, logout, type AdminTenant, type Funnel,
+} from '../../src/api';
 import { Loader } from '../../src/components/Loader';
+import { Funnels } from './Funnels';
 
 const ago = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : '—');
 
@@ -85,8 +88,10 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [q, setQ] = useState('');
+  const [funnels, setFunnels] = useState<Funnel[]>([]);
 
-  const load = () => adminListTenants().then(setTenants).catch((e) => setError(e.message));
+  const loadFunnels = () => adminListFunnels().then(setFunnels).catch((e) => setError(e.message));
+  const load = () => adminListTenants().then(setTenants).then(loadFunnels).catch((e) => setError(e.message));
 
   useEffect(() => {
     getMe()
@@ -110,6 +115,19 @@ export default function AdminPage() {
     }
     setBusy(null);
   };
+
+  const setFunnel = async (t: AdminTenant, key: string | null) => {
+    setBusy(t.id);
+    setError(null);
+    try {
+      await adminSetTenantFunnel(t.id, key);
+      setTenants((all) => all!.map((x) => (x.id === t.id ? { ...x, funnel_key: key } : x)));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+    setBusy(null);
+  };
+  const liveKeys = funnels.filter((f) => f.active).map((f) => f.key);
 
   const rows = useMemo(
     () => (tenants ?? []).filter((t) => `${t.name} ${t.owner_name ?? ''}`.toLowerCase().includes(q.toLowerCase())),
@@ -165,6 +183,8 @@ export default function AdminPage() {
 
       {error && <p role="alert" className="font-bold text-[#B8251B]">{error}</p>}
 
+      <Funnels funnels={funnels} tenants={tenants} reload={loadFunnels} />
+
       <input
         value={q}
         onChange={(e) => setQ(e.target.value)}
@@ -176,7 +196,7 @@ export default function AdminPage() {
         <table className="w-full text-left">
           <thead className="uppercase tracking-widest text-[10px] border-b-2 border-black">
             <tr>
-              {['Tenant', 'Channels', 'Customers', 'Convos', 'Messages', 'AI replies', 'Need human', 'Last message', 'Shop info', 'AI auto-reply'].map((h) => (
+              {['Tenant', 'Channels', 'Customers', 'Convos', 'Messages', 'AI replies', 'Need human', 'Last message', 'Shop info', 'Funnel', 'AI auto-reply'].map((h) => (
                 <th key={h} className="p-2 whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -197,6 +217,18 @@ export default function AdminPage() {
                 <td className="p-2 whitespace-nowrap">{ago(t.last_message_at)}</td>
                 <td className="p-2">{t.has_knowledge ? 'Yes' : <span className="text-[#B8251B] font-bold">None</span>}</td>
                 <td className="p-2">
+                  <select
+                    value={t.funnel_key ?? ''}
+                    disabled={busy === t.id}
+                    onChange={(e) => setFunnel(t, e.target.value || null)}
+                    className="border border-black bg-white p-1"
+                    title="Empty = the funnel whose key is a word of the business type, else the built-in order steps"
+                  >
+                    <option value="">Auto{t.business_type ? ` (${t.business_type})` : ''}</option>
+                    {liveKeys.map((k) => <option key={k} value={k}>{k}</option>)}
+                  </select>
+                </td>
+                <td className="p-2">
                   <button
                     onClick={() => toggle(t)}
                     disabled={busy === t.id}
@@ -209,7 +241,7 @@ export default function AdminPage() {
               </tr>
             ))}
             {!rows.length && (
-              <tr><td colSpan={10} className="p-4 text-center text-stone-600">No tenants found.</td></tr>
+              <tr><td colSpan={11} className="p-4 text-center text-stone-600">No tenants found.</td></tr>
             )}
           </tbody>
         </table>
