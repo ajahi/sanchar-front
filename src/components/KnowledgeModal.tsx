@@ -5,6 +5,7 @@ import { Database, Plus, Send, Trash2 } from 'lucide-react';
 import { addKnowledgeTopic, deleteKnowledgeTopic, getKnowledge, saveKnowledgeTopic, testBot, type Knowledge, type KnowledgeTopic } from '../api';
 import { Modal } from './Modal';
 import { Skeleton } from './Skeleton';
+import { StoreStatusCard } from './StoreStatusCard';
 
 type Draft = { title: string; content: string };
 const field = 'w-full rounded-lg border border-[#E6D9BF] bg-white px-3 py-2 text-sm focus:border-[#CC3316] focus:outline-none';
@@ -117,6 +118,8 @@ export function KnowledgeModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 {data.ai_enabled ? 'On' : 'Off'}
               </span>
             </div>
+
+            <StoreStatusCard />
 
             <p className="text-[#6B5D4F]">
               Add a topic for each thing your customers ask about, and write the answers the bot should give. The bot only

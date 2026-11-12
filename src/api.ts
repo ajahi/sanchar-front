@@ -412,6 +412,23 @@ export const testBot = (message: string) =>
     asJson<{ reply: string }>(r, 'Test failed')
   );
 
+// ---- "We are closed" switch: the bot takes no orders and answers them with the owner's message ----
+export interface Closure {
+  closed: boolean;
+  message: string | null; // what the bot tells customers right now (null while open)
+  custom_message: string | null; // the owner's last message, offered again next time
+  until: string | null; // ISO time; null while closed = until reopened
+  set_at: string | null;
+}
+
+export const getClosure = () => fetch('/api/v1/tenants/me/closure').then((r) => asJson<Closure>(r, 'Could not load shop status'));
+
+export const closeShop = (b: { message: string | null; for_today?: boolean; until?: string | null }) =>
+  sendJson('PUT', '/api/v1/tenants/me/closure', b).then((r) => asJson<Closure>(r, 'Could not close the shop'));
+
+export const reopenShop = () =>
+  fetch('/api/v1/tenants/me/closure', { method: 'DELETE' }).then((r) => asJson<Closure>(r, 'Could not reopen the shop'));
+
 // ---- Platform super admin (/api/v1/admin, role super_admin) ----
 export const getMe = () =>
   fetch('/api/v1/auth/me').then((r) =>
