@@ -3,7 +3,9 @@
 // Conversation funnels (backend services/funnels.py): edit a funnel, try it on a tenant's shop info before
 // saving, save it as a new live version, or make an older version live again (rollback).
 import { useState } from 'react';
-import { adminActivateFunnel, adminSaveFunnel, adminTryFunnel, type AdminTenant, type Funnel, type FunnelDraft } from '../../src/api';
+import {
+  adminActivateFunnel, adminFunnelFromMd, adminFunnelToMd, adminSaveFunnel, adminTryFunnel, type AdminTenant, type Funnel, type FunnelDraft,
+} from '../../src/api';
 
 const TRIGGERS = ['save_order', 'notify', 'website_post'];
 const HOURS_MESSAGE = 'Hami ahile banda chau, {opens} dekhi order lina sakchau.';
@@ -81,11 +83,26 @@ export function Funnels({ funnels, tenants, reload }: { funnels: Funnel[]; tenan
     a.click();
     URL.revokeObjectURL(a.href);
   });
+  // The .md file: settings and behaviour rules on top, steps below (backend services/funnel_md.py). Keep it in the
+  // repo (funnels/*.md) so every behaviour change has a history; loading one checks it, Save makes it live.
+  const downloadMd = () => run(async () => {
+    const f = built();
+    const { markdown } = await adminFunnelToMd(f);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([markdown], { type: 'text/markdown' }));
+    a.download = `${f.key || 'funnel'}.md`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
   const load = (file: File) =>
-    file.text().then((t) => open(JSON.parse(t))).catch((e) => setError(`Not a funnel file: ${e.message}`));
+    file.text()
+      .then((t) => (file.name.toLowerCase().endsWith('.md') ? adminFunnelFromMd(t) : JSON.parse(t)))
+      .then(open)
+      .catch((e) => setError(`Not a funnel file: ${e.message}`));
 
   const keys = [...new Set(funnels.map((f) => f.key))];
   const hours = draft?.checks.find((c) => c.type === 'opening_hours');
+  const ruleList = draft?.checks.filter((c) => c.type === 'rule') ?? [];
 
   return (
     <section className="space-y-3">
@@ -93,8 +110,8 @@ export function Funnels({ funnels, tenants, reload }: { funnels: Funnel[]; tenan
         <p className={`${label} mr-1`}>Funnels</p>
         <button className="pill aged-paper text-black cursor-pointer" onClick={() => open(BLANK)}>New funnel</button>
         <label className="pill aged-paper text-black cursor-pointer">
-          Load .json
-          <input type="file" accept=".json,application/json" className="hidden"
+          Load .md / .json
+          <input type="file" accept=".md,.json,text/markdown,application/json" className="hidden"
             onChange={(e) => { if (e.target.files?.[0]) load(e.target.files[0]); e.target.value = ''; }} />
         </label>
       </div>
@@ -166,8 +183,19 @@ export function Funnels({ funnels, tenants, reload }: { funnels: Funnel[]; tenan
                   onChange={(e) => set({ checks: draft.checks.map((c) => (c.type === 'opening_hours' ? { ...c, message: e.target.value } : c)) })} />
               </label>
             )}
+            <div className="block">
+              <span className={label}>Behaviour rules · edit them in the .md file (Download .md, edit, Load)</span>
+              {ruleList.length ? (
+                <ul className="list-disc pl-5 text-xs">
+                  {ruleList.map((r, i) => <li key={i}>{String(r.name ?? r.when)} <span className="text-stone-500">({String(r.when)})</span></li>)}
+                </ul>
+              ) : (
+                <p className="text-xs text-stone-600">None: nothing beyond the steps is enforced for this funnel.</p>
+              )}
+            </div>
             <div className="flex gap-2">
               <button className="pill bg-black text-white cursor-pointer disabled:opacity-40" disabled={busy} onClick={save}>Save &amp; make live</button>
+              <button className="pill aged-paper text-black cursor-pointer" onClick={downloadMd}>Download .md</button>
               <button className="pill aged-paper text-black cursor-pointer" onClick={download}>Download .json</button>
               <button className="pill aged-paper text-black cursor-pointer" onClick={() => setDraft(null)}>Close</button>
             </div>

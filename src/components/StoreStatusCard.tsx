@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { DoorClosed, DoorOpen } from 'lucide-react';
-import { closeShop, getClosure, reopenShop, type Closure } from '../api';
+import { closeShop, getCloseConditions, reopenShop, type CloseConditions } from '../api';
 import { Skeleton } from './Skeleton';
 
 const field = 'w-full rounded-lg border border-[#E6D9BF] bg-white px-3 py-2 text-sm focus:border-[#CC3316] focus:outline-none';
-const DEFAULT_MESSAGE = 'Hami aaja banda chau. Asuvidha ko lagi maaf garnus.'; // the server's default (hours.DEFAULT_CLOSURE)
+const DEFAULT_MESSAGE = 'Hami aaja banda chau. Asuvidha ko lagi maaf garnus.'; // the server's default (hours.DEFAULT_CLOSED_MESSAGE)
 
-const untilText = (c: Closure) =>
+const untilText = (c: CloseConditions) =>
   c.until
     ? `until ${new Date(c.until).toLocaleString('en-GB', { timeZone: 'Asia/Kathmandu', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`
     : 'until you reopen';
@@ -16,14 +16,14 @@ const untilText = (c: Closure) =>
 // The owner's "we are closed" switch. While closed the bot still answers questions, but takes no orders: anyone who
 // wants to order gets the message written here (writing "closed today" in a topic is not enough, the bot may not see it).
 export function StoreStatusCard() {
-  const [status, setStatus] = useState<Closure | null>(null);
+  const [status, setStatus] = useState<CloseConditions | null>(null);
   const [message, setMessage] = useState('');
   const [forToday, setForToday] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getClosure()
+    getCloseConditions()
       .then((c) => {
         setStatus(c);
         setMessage(c.custom_message ?? '');
@@ -31,7 +31,7 @@ export function StoreStatusCard() {
       .catch((e) => setError(e.message));
   }, []);
 
-  const run = async (fn: () => Promise<Closure>) => {
+  const run = async (fn: () => Promise<CloseConditions>) => {
     setError(null);
     setBusy(true);
     try {

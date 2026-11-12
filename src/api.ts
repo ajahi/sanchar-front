@@ -413,7 +413,7 @@ export const testBot = (message: string) =>
   );
 
 // ---- "We are closed" switch: the bot takes no orders and answers them with the owner's message ----
-export interface Closure {
+export interface CloseConditions {
   closed: boolean;
   message: string | null; // what the bot tells customers right now (null while open)
   custom_message: string | null; // the owner's last message, offered again next time
@@ -421,13 +421,13 @@ export interface Closure {
   set_at: string | null;
 }
 
-export const getClosure = () => fetch('/api/v1/tenants/me/closure').then((r) => asJson<Closure>(r, 'Could not load shop status'));
+export const getCloseConditions = () => fetch('/api/v1/tenants/me/close-conditions').then((r) => asJson<CloseConditions>(r, 'Could not load shop status'));
 
 export const closeShop = (b: { message: string | null; for_today?: boolean; until?: string | null }) =>
-  sendJson('PUT', '/api/v1/tenants/me/closure', b).then((r) => asJson<Closure>(r, 'Could not close the shop'));
+  sendJson('PUT', '/api/v1/tenants/me/close-conditions', b).then((r) => asJson<CloseConditions>(r, 'Could not close the shop'));
 
 export const reopenShop = () =>
-  fetch('/api/v1/tenants/me/closure', { method: 'DELETE' }).then((r) => asJson<Closure>(r, 'Could not reopen the shop'));
+  fetch('/api/v1/tenants/me/close-conditions', { method: 'DELETE' }).then((r) => asJson<CloseConditions>(r, 'Could not reopen the shop'));
 
 // ---- Platform super admin (/api/v1/admin, role super_admin) ----
 export const getMe = () =>
@@ -486,7 +486,8 @@ export interface FunnelDraft {
   steps: string; // prompt text; {label} and {summary_label} mark where the labels go
   fields: FunnelField[];
   triggers: string[]; // save_order, notify, website_post
-  checks: { type: string; message?: string }[]; // [{type: 'opening_hours', message: '... {opens} ...'}]
+  // [{type: 'opening_hours', message: '... {opens} ...'}] and behaviour rules {type: 'rule', name, when, ...} (from the .md file)
+  checks: { type: string; message?: string; name?: string; when?: string; [k: string]: unknown }[];
 }
 export interface Funnel extends FunnelDraft { id: string; version: number; active: boolean; created_at: string }
 
@@ -495,6 +496,14 @@ export const adminListFunnels = () => fetch('/api/v1/admin/funnels').then((r) =>
 // Saving adds a new version of the key and makes it live for every tenant on it.
 export const adminSaveFunnel = (f: FunnelDraft) =>
   sendJson('POST', '/api/v1/admin/funnels', f).then((r) => asJson<Funnel>(r, 'Could not save the funnel'));
+
+// A funnel as one .md file (backend services/funnel_md.py): settings and behaviour rules on top, steps below.
+// Reading one checks it the way saving does (its rules' examples run); it is saved from the editor.
+export const adminFunnelToMd = (f: FunnelDraft) =>
+  sendJson('POST', '/api/v1/admin/funnels/to-md', f).then((r) => asJson<{ markdown: string }>(r, 'Could not make the .md file'));
+
+export const adminFunnelFromMd = (markdown: string) =>
+  sendJson('POST', '/api/v1/admin/funnels/from-md', { markdown }).then((r) => asJson<FunnelDraft>(r, 'Not a funnel .md file'));
 
 export const adminActivateFunnel = (key: string, version: number) =>
   sendJson('POST', `/api/v1/admin/funnels/${key}/activate/${version}`, {}).then((r) => asJson<Funnel>(r, 'Could not activate'));
@@ -712,3 +721,23 @@ export const sendToKitchen = (leadId: string, lines: { product_id: string; quant
   sendJson('POST', `/api/v1/kitchen/orders/${leadId}`, { lines, location }).then((r) =>
     asJson<KitchenPlan>(r, 'Could not send the order')
   );
+
+// ---- Confirmed orders also sent as JSON to the business's own API (backend services/json_post.py) ----
+// Separate from the website ordering (kitchen): a business uses either, or both.
+export interface JsonPost {
+  url: string | null;
+  enabled: boolean;
+  secret: string | null; // checks the X-Sanchar-Signature header (HMAC-SHA256 of the body) on the business's side
+}
+export interface JsonPostResult { status: 'sent' | 'failed'; attempts: number; at: string; code?: number; error?: string }
+
+export const getJsonPost = () => fetch('/api/v1/tenants/me/json-post').then((r) => asJson<JsonPost>(r, 'Could not load your API settings'));
+
+export const saveJsonPost = (b: { url: string | null; enabled: boolean }) =>
+  sendJson('PUT', '/api/v1/tenants/me/json-post', b).then((r) => asJson<JsonPost>(r, 'Could not save your API settings'));
+
+export const newJsonPostSecret = () =>
+  sendJson('POST', '/api/v1/tenants/me/json-post/new-secret', {}).then((r) => asJson<JsonPost>(r, 'Could not make a new secret'));
+
+export const testJsonPost = () =>
+  sendJson('POST', '/api/v1/tenants/me/json-post/test', {}).then((r) => asJson<JsonPostResult>(r, 'Test failed'));

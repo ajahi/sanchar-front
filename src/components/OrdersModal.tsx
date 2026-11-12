@@ -12,7 +12,7 @@ import {
   type Lead,
   type LeadStatus,
 } from '../api';
-import { KitchenOrder, KitchenSettingsBar, SentBadge } from './KitchenPanel';
+import { JsonPostBar, KitchenOrder, KitchenSettingsBar, SentBadge } from './KitchenPanel';
 import { Modal } from './Modal';
 import { Skeleton } from './Skeleton';
 
@@ -85,6 +85,7 @@ export function OrdersModal({
           When a customer wants to buy or book, the bot asks for their name, phone, address and order. Call them, then mark the order.
         </p>
         <KitchenSettingsBar canManage={canManage} settings={kitchen} onChange={setKitchen} />
+        {canManage && <JsonPostBar />}
         <div role="tablist" className="flex flex-wrap gap-1.5">
           {TABS.map((t, i) => (
             <button

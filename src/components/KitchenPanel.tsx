@@ -2,8 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
+  getJsonPost,
   getKitchenPlan,
   KITCHEN_PICKUP,
+  newJsonPostSecret,
+  saveJsonPost,
   saveKitchen,
   sendToKitchen,
   syncKitchen,
@@ -11,6 +14,8 @@ import {
   type KitchenPlan,
   type KitchenSent,
   type KitchenSettings,
+  testJsonPost,
+  type JsonPost,
 } from '../api';
 
 const field = 'rounded border border-[#E6D9BF] bg-white px-2 py-1 text-xs focus:border-[#CC3316] focus:outline-none';
@@ -100,6 +105,79 @@ export function KitchenSettingsBar({
           </label>
         </div>
       )}
+      {error && <p role="alert" className="text-red-800">{error}</p>}
+    </section>
+  );
+}
+
+// Confirmed orders also POSTed as JSON to the business's own API or link (backend services/json_post.py).
+// The website ordering above is not touched: a business uses either, or both. Owners and admins only.
+export function JsonPostBar() {
+  const [cfg, setCfg] = useState<JsonPost | null>(null);
+  const [url, setUrl] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tested, setTested] = useState<string | null>(null);
+
+  useEffect(() => {
+    getJsonPost()
+      .then((c) => {
+        setCfg(c);
+        setUrl(c.url ?? '');
+      })
+      .catch((e) => setError(e.message));
+  }, []);
+
+  const run = async (fn: () => Promise<void>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await fn();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const save = (enabled: boolean) => run(async () => setCfg(await saveJsonPost({ url: url.trim() || null, enabled })));
+  const test = () =>
+    run(async () => {
+      setTested(null);
+      const r = await testJsonPost();
+      setTested(r.status === 'sent' ? `Your API answered ${r.code}: it works.` : `Not received: ${r.code ?? ''} ${r.error ?? ''}`.trim());
+    });
+
+  if (!cfg) return error ? <p role="alert" className="text-xs text-red-800">{error}</p> : null;
+  return (
+    <section className="rounded-xl border border-[#E6D9BF] bg-[#FFF8E8] p-3 space-y-2 text-xs" aria-label="Send orders to your own API">
+      <h3 className="font-semibold text-sm">Also send confirmed orders to your own API</h3>
+      <p className="text-[#6B5D4F]">
+        Every order a customer confirms is POSTed as JSON to this address: items with prices, delivery charge, total, customer
+        and phone. Each request is signed: check the <code>X-Sanchar-Signature</code> header (HMAC-SHA256 of the body) with your
+        secret. A repeat has the same <code>X-Sanchar-Delivery</code> id. Your website ordering keeps working as it is.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <input className={`${field} min-w-[16rem] flex-1`} value={url} onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://your-api.example.com/orders" aria-label="Your API address" />
+        <button className={secondary} disabled={busy || (url.trim() || null) === cfg.url} onClick={() => save(cfg.enabled)}>SAVE</button>
+        {cfg.url && <button className={secondary} disabled={busy} onClick={test}>SEND A TEST ORDER</button>}
+      </div>
+      <label className="flex items-center gap-1.5">
+        <input type="checkbox" disabled={busy || !cfg.url} checked={cfg.enabled} onChange={(e) => save(e.target.checked)} />
+        <span><b>Send confirmed orders here</b>{!cfg.enabled && ' (off)'}</span>
+      </label>
+      {cfg.secret && (
+        <p className="flex flex-wrap items-center gap-2">
+          <span>Secret:</span>
+          <code className="break-all rounded bg-white px-1.5 py-0.5">{cfg.secret}</code>
+          <button className="underline cursor-pointer disabled:opacity-50" disabled={busy}
+            onClick={() => confirm('Make a new secret? The old one stops working at once: update your API too.') &&
+              run(async () => setCfg(await newJsonPostSecret()))}>
+            new secret
+          </button>
+        </p>
+      )}
+      {tested && <p className="font-semibold">{tested}</p>}
       {error && <p role="alert" className="text-red-800">{error}</p>}
     </section>
   );
