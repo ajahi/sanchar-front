@@ -164,6 +164,12 @@ export default function LoginPage() {
                 <Instagram className="h-5 w-5 shrink-0" />
                 <span>{signup ? 'Sign up with Instagram' : 'Log in with Instagram'}</span>
               </a>
+              {signup && (
+                <p className="mt-2 text-center text-[11px] leading-snug text-[#8A7B69]">
+                  By signing up, you agree to the <a href="/terms" target="_blank" rel="noopener" className="underline">terms of service</a> and{' '}
+                  <a href="/privacy" target="_blank" rel="noopener" className="underline">privacy policy</a>.
+                </p>
+              )}
 
               <div className="my-5 flex items-center gap-3 text-xs text-[#A89A86]">
                 <span className="h-px flex-1 bg-[#E6D9BF]" />or / अथवा<span className="h-px flex-1 bg-[#E6D9BF]" />
@@ -242,8 +248,8 @@ export default function LoginPage() {
               </button>
 
               <p className="text-center text-[11px] leading-snug text-[#8A7B69]">
-                By continuing, you agree to Sanchar&apos;s <span className="cursor-pointer underline">terms of service</span> and{' '}
-                <span className="cursor-pointer underline">privacy policy</span>.
+                By continuing, you agree to Sanchar&apos;s <a href="/terms" target="_blank" rel="noopener" className="underline">terms of service</a> and{' '}
+                <a href="/privacy" target="_blank" rel="noopener" className="underline">privacy policy</a>.
               </p>
             </form>
           )}
