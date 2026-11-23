@@ -22,6 +22,7 @@ export function middleware(req: NextRequest) {
   if (pathname === '/register') return NextResponse.redirect(new URL('/login?mode=signup', req.url));
   if (pathname === '/verify') return NextResponse.next(); // emailed link; works with or without a session
   if (pathname === '/new-theme') return NextResponse.next(); // public
+  if (pathname === '/privacy' || pathname === '/terms') return NextResponse.next(); // public legal pages: app review needs them without a login
   if (!hasSession && !isLogin) return NextResponse.redirect(new URL('/login' + search, req.url)); // keep ?ig_error= from the OAuth callback
   if (hasSession && isLogin) return NextResponse.redirect(new URL('/', req.url));
   return NextResponse.next();

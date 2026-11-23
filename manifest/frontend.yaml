@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: 572824491336.dkr.ecr.ap-south-1.amazonaws.com/sanchar/frontend:50fbb03
+          image: 572824491336.dkr.ecr.ap-south-1.amazonaws.com/sanchar/frontend:latest
           ports:
             - containerPort: 3000
           envFrom:
